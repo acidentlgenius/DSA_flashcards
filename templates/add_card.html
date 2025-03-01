@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Add New Flashcard</h1>
+    <form method="POST" action="{{ url_for('add_card') }}" class="form" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <label for="topic">Topic:</label>
+        <select name="topic" id="topic" required>
+            {% for topic in topics %}
+                <option value="{{ topic.name }}" {% if request.args.get('topic') == topic.name %}selected{% endif %}>{{ topic.name }}</option>
+            {% endfor %}
+            <option value="Other">Other (New Topic)</option>
+        </select>
+        <label for="problem_name">Problem Name:</label>
+        <input type="text" name="problem_name" id="problem_name" placeholder="e.g., Two Sum" required>
+        <label for="description">Description:</label>
+        <textarea name="description" id="description" placeholder="Problem details" required></textarea>
+        <label for="approach">Approach:</label>
+        <textarea name="approach" id="approach" placeholder="Solution explanation" required></textarea>
+        <label for="difficulty">Difficulty:</label>
+        <select name="difficulty" id="difficulty">
+            <option value="Easy">Easy</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Hard">Hard</option>
+        </select>
+        <label for="notes">Custom Notes (Optional):</label>
+        <textarea name="notes" id="notes" placeholder="Your personal notes"></textarea>
+        <label for="image">Attach Image (Optional):</label>
+        <input type="file" name="image" id="image" accept=".png,.jpg,.jpeg,.gif">
+        <button type="submit">Add Card</button>
+    </form>
+    <script>
+        function validateForm() {
+            const requiredInputs = document.querySelectorAll('input[required], textarea[required], select[required]');
+            for (let input of requiredInputs) {
+                if (!input.value.trim()) {
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+            }
+            return true;
+        }
+    </script>
+{% endblock %}

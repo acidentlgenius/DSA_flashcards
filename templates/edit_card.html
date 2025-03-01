@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Edit Flashcard</h1>
+    <form method="POST" action="{{ url_for('edit_card', card_id=flashcard.id) }}" class="form" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <label for="topic">Topic:</label>
+        <select name="topic" id="topic" required onchange="toggleNewTopicInput()">
+            {% for topic in topics %}
+                <option value="{{ topic.name }}" {% if topic.name == flashcard.topic.name %}selected{% endif %}>{{ topic.name }}</option>
+            {% endfor %}
+            <option value="Other">Other (New Topic)</option>
+        </select>
+        <div id="new_topic_input" style="display: none;">
+            <label for="new_topic_name">New Topic Name:</label>
+            <input type="text" name="new_topic_name" id="new_topic_name">
+        </div>
+
+        <label for="problem_name">Problem Name:</label>
+        <input type="text" name="problem_name" id="problem_name" value="{{ flashcard.problem_name }}" required>
+
+        <label for="description">Description:</label>
+        <textarea name="description" id="description" required>{{ flashcard.description }}</textarea>
+
+        <label for="approach">Approach:</label>
+        <textarea name="approach" id="approach" required>{{ flashcard.approach }}</textarea>
+
+        <label for="difficulty">Difficulty:</label>
+        <select name="difficulty" id="difficulty">
+            <option value="Easy" {% if flashcard.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+            <option value="Medium" {% if flashcard.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+            <option value="Hard" {% if flashcard.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+        </select>
+
+        <label for="notes">Custom Notes (Optional):</label>
+        <textarea name="notes" id="notes">{{ flashcard.notes }}</textarea>
+
+        <label for="image">Attach Image (Optional):</label>
+        {% if flashcard.image_path %}
+            <p>Current Image: <img src="{{ url_for('static', filename=flashcard.image_path) }}" alt="Current Image" style="max-width: 200px;"></p>
+        {% endif %}
+        <input type="file" name="image" id="image" accept=".png,.jpg,.jpeg,.gif">
+
+        <button type="submit">Update Card</button>
+    </form>
+
+    <script>
+        function toggleNewTopicInput() {
+            const topicSelect = document.getElementById('topic');
+            const newTopicInput = document.getElementById('new_topic_input');
+            if (topicSelect.value === 'Other') {
+                newTopicInput.style.display = 'block';
+            } else {
+                newTopicInput.style.display = 'none';
+            }
+        }
+        // Set initial state based on current selection
+        toggleNewTopicInput();
+
+        function validateForm() {
+            const topicSelect = document.getElementById('topic');
+            if (topicSelect.value === 'Other') {
+                const newTopicName = document.getElementById('new_topic_name').value.trim();
+                if (!newTopicName) {
+                    alert('Please provide a new topic name.');
+                    return false;
+                }
+            }
+            const requiredInputs = document.querySelectorAll('input[required], textarea[required], select[required]');
+            for (let input of requiredInputs) {
+                if (!input.value.trim()) {
+                    alert('Please fill in all required fields.');
+                    return false;
+                }
+            }
+            return true;
+        }
+    </script>
+{% endblock %}

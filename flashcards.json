@@ -1,0 +1,1000 @@
+{
+    "Arrays": [
+      {
+        "Problem Name": "Pascal's Triangle",
+        "Description": "Generate Pascal's triangle up to n rows",
+        "Approach": "Each row starts and ends with 1, inner elements sum of above"
+      },
+      {
+        "Problem Name": "Next Permutation",
+        "Description": "Find the next lexicographically greater permutation",
+        "Approach": "Find first decreasing element from end, swap, and reverse suffix"
+      },
+      {
+        "Problem Name": "Kadane's Algorithm",
+        "Description": "Find the maximum subarray sum",
+        "Approach": "Keep a running sum, reset if negative, track maximum sum"
+      },
+      {
+        "Problem Name": "Sort an array of 0's, 1's and 2's",
+        "Description": "Sort an array containing only 0s, 1s, and 2s",
+        "Approach": "Use Dutch national flag algorithm with three pointers"
+      },
+      {
+        "Problem Name": "Stock Buy and Sell",
+        "Description": "Find best time to buy and sell stock for max profit",
+        "Approach": "Track minimum price seen so far and maximize difference"
+      },
+      {
+        "Problem Name": "Merge two sorted arrays without extra space",
+        "Description": "Merge two sorted arrays in-place without extra space",
+        "Approach": "Use two-pointer technique to merge by swapping elements"
+      },
+      {
+        "Problem Name": "Find the duplicate in an array of N+1 integers",
+        "Description": "Find duplicate number in array from 1 to N, size N+1",
+        "Approach": "Use Floyd's cycle-finding algorithm or mark visited numbers"
+      },
+      {
+        "Problem Name": "Repeat and Missing Number",
+        "Description": "Find repeated and missing number in array from 1 to N",
+        "Approach": "Use mathematical formulas for sum and sum of squares"
+      },
+      {
+        "Problem Name": "Inversion of Array",
+        "Description": "Count the number of inversions in an array",
+        "Approach": "Use modified merge sort to count inversions while sorting"
+      },
+      {
+        "Problem Name": "Majority Element (>n/2 times)",
+        "Description": "Find element appearing more than n/2 times",
+        "Approach": "Use Boyer-Moore voting algorithm"
+      },
+      {
+        "Problem Name": "Majority Element (n/3 times)",
+        "Description": "Find elements appearing more than n/3 times",
+        "Approach": "Use Boyer-Moore voting algorithm extension with two candidates"
+      },
+      {
+        "Problem Name": "Reverse Pairs (Leetcode)",
+        "Description": "Count number of reverse pairs in an array",
+        "Approach": "Use modified merge sort to count inversions"
+      },
+      {
+        "Problem Name": "2Sum Problem",
+        "Description": "Find two numbers that add up to a specific target",
+        "Approach": "Use hash map to store difference between target and each element"
+      },
+      {
+        "Problem Name": "4-Sum Problem",
+        "Description": "Find all unique quadruplets summing to a target",
+        "Approach": "Sort array and use four pointers with two nested loops"
+      },
+      {
+        "Problem Name": "Longest Consecutive Sequence",
+        "Description": "Find length of longest consecutive sequence",
+        "Approach": "Use set to store elements and iterate to find longest sequence"
+      },
+      {
+        "Problem Name": "Largest Subarray with K sum",
+        "Description": "Find largest subarray with sum k",
+        "Approach": "Use hash map to store cumulative sum and find max length"
+      },
+      {
+        "Problem Name": "Count number of subarrays with given xor K",
+        "Description": "Count subarrays with given XOR value",
+        "Approach": "Use hash map to store frequency of cumulative XOR values"
+      },
+      {
+        "Problem Name": "Longest Substring without repeat",
+        "Description": "Find length of longest substring without repeating characters",
+        "Approach": "Use sliding window with a set to track unique characters"
+      },
+      {
+        "Problem Name": "3 sum",
+        "Description": "Find all unique triplets summing to zero",
+        "Approach": "Sort array and use two pointers for each element"
+      },
+      {
+        "Problem Name": "Trapping Rainwater",
+        "Description": "Calculate water trapped after raining",
+        "Approach": "Use two-pointer technique to find water level at each position"
+      },
+      {
+        "Problem Name": "Remove Duplicate from Sorted array",
+        "Description": "Remove duplicates from sorted array in-place",
+        "Approach": "Use two pointers to overwrite duplicates and track new length"
+      },
+      {
+        "Problem Name": "Max consecutive ones",
+        "Description": "Find maximum number of consecutive 1s in binary array",
+        "Approach": "Traverse array and count consecutive 1s, update maximum count"
+      },
+      {
+        "Problem Name": "Merge Overlapping Subintervals",
+        "Description": "Merge overlapping intervals into non-overlapping ones",
+        "Approach": "Sort intervals by start time and merge if overlapping"
+      },
+      {
+        "Problem Name": "K most frequent elements",
+        "Description": "Find k most frequent elements in an array",
+        "Approach": "Use a hash map and min-heap to track frequencies"
+      },
+      {
+        "Problem Name": "K-th largest element in an unsorted array",
+        "Description": "Find k-th largest element in an array",
+        "Approach": "Use a min-heap of size k or quickselect algorithm"
+      },
+      {
+        "Problem Name": "Distinct numbers in Window",
+        "Description": "Find number of distinct elements in each window",
+        "Approach": "Use sliding window with a hash map to count distinct elements"
+      },
+      {
+        "Problem Name": "Max Product Subarray",
+        "Description": "Find maximum product of a contiguous subarray",
+        "Approach": "Track max and min products ending at each position"
+      }
+    ],
+    "Matrix": [
+      {
+        "Problem Name": "Set Matrix Zeros",
+        "Description": "Set entire row and column to zero if any element is zero",
+        "Approach": "Use first row and column as markers to track zeros"
+      },
+      {
+        "Problem Name": "Rotate Matrix",
+        "Description": "Rotate a square matrix by 90 degrees",
+        "Approach": "Transpose matrix and reverse each row"
+      },
+      {
+        "Problem Name": "Search in a 2D matrix",
+        "Description": "Search for a target in a sorted 2D matrix",
+        "Approach": "Start from top-right and move based on comparison"
+      },
+      {
+        "Problem Name": "Grid Unique Paths",
+        "Description": "Find number of unique paths in a grid",
+        "Approach": "Use DP where dp[i][j] is paths to reach (i,j)"
+      },
+      {
+        "Problem Name": "Matrix Median",
+        "Description": "Find median of all elements in a row-sorted matrix",
+        "Approach": "Use binary search on range to find median"
+      },
+      {
+        "Problem Name": "Minimum sum path in the matrix",
+        "Description": "Find path with minimum sum from top-left to bottom-right",
+        "Approach": "Use DP to compute min sum at each cell"
+      }
+    ],
+    "Linked Lists": [
+      {
+        "Problem Name": "Reverse a LinkedList",
+        "Description": "Reverse a singly linked list",
+        "Approach": "Use three pointers iteratively or recursion"
+      },
+      {
+        "Problem Name": "Find the middle of LinkedList",
+        "Description": "Find middle node of a linked list",
+        "Approach": "Use slow and fast pointer technique"
+      },
+      {
+        "Problem Name": "Merge two sorted Linked List",
+        "Description": "Merge two sorted linked lists",
+        "Approach": "Use dummy node and compare node values"
+      },
+      {
+        "Problem Name": "Remove N-th node from back of LinkedList",
+        "Description": "Remove nth node from end of list",
+        "Approach": "Use two pointers with n-node gap"
+      },
+      {
+        "Problem Name": "Add two numbers as LinkedList",
+        "Description": "Add two numbers represented by linked lists",
+        "Approach": "Add digits with carry using two pointers"
+      },
+      {
+        "Problem Name": "Delete a given Node when a node is given",
+        "Description": "Delete a node given only its pointer",
+        "Approach": "Copy next node's value and delete next node"
+      },
+      {
+        "Problem Name": "Find intersection point of Y LinkedList",
+        "Description": "Find intersection point of two lists",
+        "Approach": "Use difference in lengths or cycle method"
+      },
+      {
+        "Problem Name": "Detect a cycle in Linked List",
+        "Description": "Check if a linked list has a cycle",
+        "Approach": "Use Floyd's cycle-finding algorithm"
+      },
+      {
+        "Problem Name": "Reverse a LinkedList in groups of size k",
+        "Description": "Reverse list in groups of k nodes",
+        "Approach": "Reverse k nodes at a time using pointers"
+      },
+      {
+        "Problem Name": "Check if a LinkedList is palindrome or not",
+        "Description": "Check if list is a palindrome",
+        "Approach": "Find middle, reverse second half, compare"
+      },
+      {
+        "Problem Name": "Find the starting point of the Loop of LinkedList",
+        "Description": "Find start of cycle in a linked list",
+        "Approach": "Use Floyd's algorithm and reset one pointer"
+      },
+      {
+        "Problem Name": "Flattening of a LinkedList",
+        "Description": "Flatten a multi-level linked list",
+        "Approach": "Merge child lists iteratively"
+      },
+      {
+        "Problem Name": "Rotate a LinkedList",
+        "Description": "Rotate list to the right by k places",
+        "Approach": "Find new head and adjust pointers"
+      },
+      {
+        "Problem Name": "Clone a Linked List with random and next pointer",
+        "Description": "Clone list with random pointers",
+        "Approach": "Use interleaved nodes or hash map"
+      }
+    ],
+    "Greedy Algorithms": [
+      {
+        "Problem Name": "N meetings in one room",
+        "Description": "Maximize number of non-overlapping meetings",
+        "Approach": "Sort by end time and pick non-overlapping meetings"
+      },
+      {
+        "Problem Name": "Minimum number of platforms required for a railway",
+        "Description": "Find min platforms for train schedules",
+        "Approach": "Sort arrival and departure, track max overlap"
+      },
+      {
+        "Problem Name": "Job sequencing Problem",
+        "Description": "Maximize profit with job deadlines",
+        "Approach": "Sort by profit and schedule within deadlines"
+      },
+      {
+        "Problem Name": "Fractional Knapsack Problem",
+        "Description": "Maximize value in knapsack with fractional items",
+        "Approach": "Sort by value/weight and fill knapsack"
+      },
+      {
+        "Problem Name": "Greedy algorithm to find minimum number of coins",
+        "Description": "Minimize coins to make an amount",
+        "Approach": "Use largest denomination first (assuming greed works)"
+      },
+      {
+        "Problem Name": "Assign Cookies",
+        "Description": "Assign cookies to children to satisfy greed",
+        "Approach": "Sort cookies and greed, assign greedily"
+      },
+      {
+        "Problem Name": "Maximum profit in Job scheduling",
+        "Description": "Maximize profit with job start/end times",
+        "Approach": "Sort by end time and use DP or greedy approach"
+      },
+      {
+        "Problem Name": "Merge K sorted arrays",
+        "Description": "Merge k sorted arrays into one",
+        "Approach": "Use a min-heap to merge arrays efficiently"
+      }
+    ],
+    "Recursion and Backtracking": [
+      {
+        "Problem Name": "Subset Sums",
+        "Description": "Find all subset sums of an array",
+        "Approach": "Use recursion to include/exclude each element"
+      },
+      {
+        "Problem Name": "Subset-II",
+        "Description": "Find all unique subsets with duplicates",
+        "Approach": "Sort array and skip duplicates in recursion"
+      },
+      {
+        "Problem Name": "Combination sum-1",
+        "Description": "Find combinations summing to target (reuse allowed)",
+        "Approach": "Use backtracking with element reuse"
+      },
+      {
+        "Problem Name": "Combination sum-2",
+        "Description": "Find unique combinations summing to target",
+        "Approach": "Sort and use backtracking without reuse"
+      },
+      {
+        "Problem Name": "Palindrome Partitioning",
+        "Description": "Partition string into palindromic substrings",
+        "Approach": "Use backtracking to check palindromes"
+      },
+      {
+        "Problem Name": "K-th permutation Sequence",
+        "Description": "Find k-th permutation of numbers 1 to n",
+        "Approach": "Use factorial system to pick digits"
+      },
+      {
+        "Problem Name": "Print all permutations of a string/array",
+        "Description": "Generate all permutations",
+        "Approach": "Swap elements and backtrack"
+      },
+      {
+        "Problem Name": "N queens Problem",
+        "Description": "Place n queens on n×n board without conflicts",
+        "Approach": "Use backtracking to place queens row-wise"
+      },
+      {
+        "Problem Name": "Sudoku Solver",
+        "Description": "Solve a 9×9 Sudoku puzzle",
+        "Approach": "Use backtracking to fill cells, checking validity"
+      },
+      {
+        "Problem Name": "M Coloring Problem",
+        "Description": "Color graph with m colors, no adjacent same",
+        "Approach": "Use backtracking to assign colors"
+      },
+      {
+        "Problem Name": "Rat in a Maze",
+        "Description": "Find path in maze from start to end",
+        "Approach": "Use backtracking to explore all directions"
+      },
+      {
+        "Problem Name": "Word Break (print all ways)",
+        "Description": "Break string into dictionary words",
+        "Approach": "Use backtracking to find all combinations"
+      },
+      {
+        "Problem Name": "Power Set",
+        "Description": "Generate all possible subsets of a set",
+        "Approach": "Use recursion or bit manipulation"
+      },
+      {
+        "Problem Name": "Palindrome Partitioning (MCM Variation)",
+        "Description": "Minimize cuts to partition into palindromes",
+        "Approach": "Use DP or backtracking with memoization"
+      },
+      {
+        "Problem Name": "Flatten Binary Tree to LinkedList",
+        "Description": "Flatten binary tree into a linked list",
+        "Approach": "Use recursion to flatten left and right subtrees"
+      }
+    ],
+    "Binary Search": [
+      {
+        "Problem Name": "Pow(x, n)",
+        "Description": "Calculate x raised to power n",
+        "Approach": "Use binary exponentiation for efficiency"
+      },
+      {
+        "Problem Name": "The N-th root of an integer",
+        "Description": "Find nth root of an integer",
+        "Approach": "Use binary search on range to find root"
+      },
+      {
+        "Problem Name": "Find the element that appears once in a sorted array",
+        "Description": "Find unique element where others appear twice",
+        "Approach": "Use binary search to find the single element"
+      },
+      {
+        "Problem Name": "Search element in a sorted and rotated array",
+        "Description": "Search in rotated sorted array",
+        "Approach": "Find pivot and binary search appropriate half"
+      },
+      {
+        "Problem Name": "Median of 2 sorted arrays",
+        "Description": "Find median of two sorted arrays",
+        "Approach": "Use binary search to partition arrays"
+      },
+      {
+        "Problem Name": "K-th element of two sorted arrays",
+        "Description": "Find k-th smallest element in two sorted arrays",
+        "Approach": "Use binary search on smaller array"
+      },
+      {
+        "Problem Name": "Allocate Minimum Number of Pages",
+        "Description": "Minimize max pages allocated to students",
+        "Approach": "Use binary search on max pages"
+      },
+      {
+        "Problem Name": "Aggressive Cows",
+        "Description": "Maximize min distance between cows in stalls",
+        "Approach": "Use binary search on min distance"
+      },
+      {
+        "Problem Name": "Find K-th largest element in BST",
+        "Description": "Find k-th largest element in a BST",
+        "Approach": "Use reverse inorder traversal with count"
+      }
+    ],
+    "Stack and Queue": [
+      {
+        "Problem Name": "Implement Stack using Arrays",
+        "Description": "Implement stack with array",
+        "Approach": "Use array with top pointer"
+      },
+      {
+        "Problem Name": "Implement Queue using Arrays",
+        "Description": "Implement queue with array",
+        "Approach": "Use array with front and rear pointers"
+      },
+      {
+        "Problem Name": "Implement Stack using Queue",
+        "Description": "Implement stack using a single queue",
+        "Approach": "Rearrange queue on push to mimic stack"
+      },
+      {
+        "Problem Name": "Implement Queue using Stack",
+        "Description": "Implement queue using two stacks",
+        "Approach": "Use one stack for enqueue, another for dequeue"
+      },
+      {
+        "Problem Name": "Check for balanced parentheses",
+        "Description": "Check if parentheses are balanced",
+        "Approach": "Use stack to match opening and closing brackets"
+      },
+      {
+        "Problem Name": "Next Greater Element",
+        "Description": "Find next greater element for each array element",
+        "Approach": "Use stack to track greater elements"
+      },
+      {
+        "Problem Name": "Sort a Stack",
+        "Description": "Sort a stack in ascending order",
+        "Approach": "Use recursion or additional stack"
+      },
+      {
+        "Problem Name": "Next Smaller Element",
+        "Description": "Find next smaller element for each array element",
+        "Approach": "Use stack to track smaller elements"
+      },
+      {
+        "Problem Name": "LRU cache",
+        "Description": "Implement Least Recently Used cache",
+        "Approach": "Use doubly linked list and hash map"
+      },
+      {
+        "Problem Name": "LFU cache",
+        "Description": "Implement Least Frequently Used cache",
+        "Approach": "Use two hash maps and a min frequency tracker"
+      },
+      {
+        "Problem Name": "Largest rectangle in a histogram",
+        "Description": "Find largest rectangle in histogram",
+        "Approach": "Use stack to track bar heights"
+      },
+      {
+        "Problem Name": "Sliding Window maximum",
+        "Description": "Find max in each sliding window",
+        "Approach": "Use deque to track decreasing order"
+      },
+      {
+        "Problem Name": "Implement Min Stack",
+        "Description": "Implement stack with min element access",
+        "Approach": "Use two stacks or encode min in single stack"
+      },
+      {
+        "Problem Name": "Rotten Orange (Using BFS)",
+        "Description": "Find time to rot all oranges in grid",
+        "Approach": "Use queue for BFS from rotten oranges"
+      },
+      {
+        "Problem Name": "Stock span problem",
+        "Description": "Find span of stock prices",
+        "Approach": "Use stack to find previous greater day"
+      },
+      {
+        "Problem Name": "Find the maximum of minimums of every window size",
+        "Description": "Find max of mins for all window sizes",
+        "Approach": "Use stack for next smaller elements"
+      },
+      {
+        "Problem Name": "The Celebrity Problem",
+        "Description": "Find celebrity in a party",
+        "Approach": "Use stack or elimination to find candidate"
+      }
+    ],
+    "Strings": [
+      {
+        "Problem Name": "Reverse Words in a String",
+        "Description": "Reverse order of words in a string",
+        "Approach": "Reverse entire string then reverse each word"
+      },
+      {
+        "Problem Name": "Longest Palindrome in a string",
+        "Description": "Find longest palindromic substring",
+        "Approach": "Use expand-around-center or Manacher's algorithm"
+      },
+      {
+        "Problem Name": "Roman Number to Integer and vice versa",
+        "Description": "Convert Roman numeral to/from integer",
+        "Approach": "Use rules for Roman numeral conversion"
+      },
+      {
+        "Problem Name": "Implement ATOI/STRSTR",
+        "Description": "Convert string to integer or find substring",
+        "Approach": "Parse digits for ATOI; use KMP for STRSTR"
+      },
+      {
+        "Problem Name": "Longest Common Prefix",
+        "Description": "Find longest common prefix of strings",
+        "Approach": "Compare characters vertically or use trie"
+      },
+      {
+        "Problem Name": "Rabin Karp",
+        "Description": "Find substring in text using rolling hash",
+        "Approach": "Use hash function with sliding window"
+      },
+      {
+        "Problem Name": "Z-Function",
+        "Description": "Compute Z-array for string pattern matching",
+        "Approach": "Build Z-array using two pointers"
+      },
+      {
+        "Problem Name": "KMP algo / LPS(pi) array",
+        "Description": "Find substring with KMP algorithm",
+        "Approach": "Precompute LPS array and match pattern"
+      },
+      {
+        "Problem Name": "Minimum characters needed to be inserted",
+        "Description": "Make string palindromic with min insertions",
+        "Approach": "Use LPS array or DP"
+      },
+      {
+        "Problem Name": "Check for Anagrams",
+        "Description": "Check if two strings are anagrams",
+        "Approach": "Use frequency array or sorting"
+      },
+      {
+        "Problem Name": "Count and say",
+        "Description": "Generate nth term of count-and-say sequence",
+        "Approach": "Recursively build sequence"
+      },
+      {
+        "Problem Name": "Compare version numbers",
+        "Description": "Compare two version strings",
+        "Approach": "Split and compare segments numerically"
+      },
+      {
+        "Problem Name": "Word Break",
+        "Description": "Check if string can be segmented into dictionary words",
+        "Approach": "Use DP or trie to check segmentation"
+      }
+    ],
+    "Binary Tree": [
+      {
+        "Problem Name": "Inorder Traversal",
+        "Description": "Traverse tree in inorder",
+        "Approach": "Left-Root-Right recursively or iteratively"
+      },
+      {
+        "Problem Name": "Preorder Traversal",
+        "Description": "Traverse tree in preorder",
+        "Approach": "Root-Left-Right recursively or iteratively"
+      },
+      {
+        "Problem Name": "Postorder Traversal",
+        "Description": "Traverse tree in postorder",
+        "Approach": "Left-Right-Root recursively or iteratively"
+      },
+      {
+        "Problem Name": "Morris Inorder Traversal",
+        "Description": "Inorder traversal without recursion/stack",
+        "Approach": "Use threading with right child pointers"
+      },
+      {
+        "Problem Name": "Morris Preorder Traversal",
+        "Description": "Preorder traversal without recursion/stack",
+        "Approach": "Use threading with right child pointers"
+      },
+      {
+        "Problem Name": "LeftView Of Binary Tree",
+        "Description": "Get left view of binary tree",
+        "Approach": "Use level order or recursion with level tracking"
+      },
+      {
+        "Problem Name": "Bottom View of Binary Tree",
+        "Description": "Get bottom view of binary tree",
+        "Approach": "Use vertical order with last node at each HD"
+      },
+      {
+        "Problem Name": "Top View of Binary Tree",
+        "Description": "Get top view of binary tree",
+        "Approach": "Use vertical order with first node at each HD"
+      },
+      {
+        "Problem Name": "Preorder inorder postorder in a single traversal",
+        "Description": "All traversals in one pass",
+        "Approach": "Use stack with state tracking"
+      },
+      {
+        "Problem Name": "Vertical order traversal",
+        "Description": "Traverse tree vertically",
+        "Approach": "Use hash map with horizontal distance"
+      },
+      {
+        "Problem Name": "Root to Node Path in Binary Tree",
+        "Description": "Find path from root to given node",
+        "Approach": "Use recursion with path tracking"
+      },
+      {
+        "Problem Name": "Max width of a Binary Tree",
+        "Description": "Find maximum width of tree",
+        "Approach": "Use level order with index tracking"
+      },
+      {
+        "Problem Name": "Level order Traversal / Spiral form",
+        "Description": "Traverse tree level by level or spirally",
+        "Approach": "Use queue for level order; reverse for spiral"
+      },
+      {
+        "Problem Name": "Height of a Binary Tree",
+        "Description": "Find height of binary tree",
+        "Approach": "Recursively compute max of left and right heights"
+      },
+      {
+        "Problem Name": "Diameter of Binary Tree",
+        "Description": "Find longest path between any two nodes",
+        "Approach": "Compute max diameter through each node"
+      },
+      {
+        "Problem Name": "Check if Binary tree is height-balanced",
+        "Description": "Check if tree is balanced",
+        "Approach": "Compute height and check difference"
+      },
+      {
+        "Problem Name": "LCA in Binary Tree",
+        "Description": "Find lowest common ancestor of two nodes",
+        "Approach": "Recursively find paths intersecting"
+      },
+      {
+        "Problem Name": "Check if two trees are identical",
+        "Description": "Check if two binary trees are same",
+        "Approach": "Compare nodes recursively"
+      },
+      {
+        "Problem Name": "Zig Zag Traversal of Binary Tree",
+        "Description": "Traverse tree in zig-zag order",
+        "Approach": "Use two stacks or reverse alternate levels"
+      },
+      {
+        "Problem Name": "Boundary Traversal of Binary Tree",
+        "Description": "Traverse boundary of tree",
+        "Approach": "Combine left, leaf, and right boundary"
+      },
+      {
+        "Problem Name": "Maximum path sum",
+        "Description": "Find max path sum in tree",
+        "Approach": "Track max sum through each node"
+      },
+      {
+        "Problem Name": "Construct Binary Tree from inorder and preorder",
+        "Description": "Build tree from traversals",
+        "Approach": "Use preorder for root, inorder for split"
+      },
+      {
+        "Problem Name": "Construct Binary Tree from Inorder and Postorder",
+        "Description": "Build tree from traversals",
+        "Approach": "Use postorder for root, inorder for split"
+      },
+      {
+        "Problem Name": "Symmetric Binary Tree",
+        "Description": "Check if tree is symmetric",
+        "Approach": "Compare left and right subtrees mirrored"
+      },
+      {
+        "Problem Name": "Check if Binary Tree is mirror of itself",
+        "Description": "Check if tree mirrors itself",
+        "Approach": "Same as symmetric check"
+      },
+      {
+        "Problem Name": "Check for Children Sum Property",
+        "Description": "Check if node value equals sum of children",
+        "Approach": "Recursively verify property"
+      },
+      {
+        "Problem Name": "Binary Tree to Double Linked List",
+        "Description": "Convert binary tree to doubly linked list",
+        "Approach": "Use inorder traversal to link nodes"
+      },
+      {
+        "Problem Name": "Flood-fill Algorithm",
+        "Description": "Fill connected region with new color",
+        "Approach": "Use DFS or BFS from starting pixel"
+      }
+    ],
+    "Binary Search Tree": [
+      {
+        "Problem Name": "Populate Next Right pointers of Tree",
+        "Description": "Connect nodes at same level",
+        "Approach": "Use level order or next pointer linking"
+      },
+      {
+        "Problem Name": "Search given Key in BST",
+        "Description": "Search for a key in BST",
+        "Approach": "Use BST property to traverse left or right"
+      },
+      {
+        "Problem Name": "Construct BST from given keys",
+        "Description": "Build BST from array of keys",
+        "Approach": "Insert keys one by one into BST"
+      },
+      {
+        "Problem Name": "Construct a BST from a preorder traversal",
+        "Description": "Build BST from preorder",
+        "Approach": "Use bounds to construct recursively"
+      },
+      {
+        "Problem Name": "Check is a BT is BST or not",
+        "Description": "Check if binary tree is a BST",
+        "Approach": "Use inorder traversal or min-max range"
+      },
+      {
+        "Problem Name": "Find LCA of two nodes in BST",
+        "Description": "Find lowest common ancestor in BST",
+        "Approach": "Use BST property to traverse"
+      },
+      {
+        "Problem Name": "Find the inorder predecessor/successor",
+        "Description": "Find predecessor/successor of a key",
+        "Approach": "Use inorder traversal or BST properties"
+      },
+      {
+        "Problem Name": "Floor in a BST",
+        "Description": "Find largest value less than or equal to key",
+        "Approach": "Traverse left if smaller, right if larger"
+      },
+      {
+        "Problem Name": "Ceil in a BST",
+        "Description": "Find smallest value greater than or equal to key",
+        "Approach": "Traverse right if larger, left if smaller"
+      },
+      {
+        "Problem Name": "Find K-th smallest element in BST",
+        "Description": "Find k-th smallest element in BST",
+        "Approach": "Use inorder traversal with count"
+      },
+      {
+        "Problem Name": "Find a pair with a given sum in BST",
+        "Description": "Find two nodes summing to target",
+        "Approach": "Use two-pointer technique with inorder"
+      },
+      {
+        "Problem Name": "BST iterator",
+        "Description": "Implement iterator for BST",
+        "Approach": "Use stack for inorder traversal"
+      },
+      {
+        "Problem Name": "Size of the largest BST in a Binary Tree",
+        "Description": "Find size of largest BST in tree",
+        "Approach": "Check each subtree with min-max range"
+      },
+      {
+        "Problem Name": "Serialize and deserialize Binary Tree",
+        "Description": "Convert tree to string and back",
+        "Approach": "Use preorder with markers for null"
+      },
+      {
+        "Problem Name": "Find median in a stream of running integers",
+        "Description": "Find median of stream",
+        "Approach": "Use two heaps (max and min)"
+      }
+    ],
+    "Graph": [
+      {
+        "Problem Name": "Clone a graph",
+        "Description": "Clone a graph with nodes and edges",
+        "Approach": "Use DFS/BFS with hash map for cloning"
+      },
+      {
+        "Problem Name": "DFS",
+        "Description": "Depth-first search on graph",
+        "Approach": "Recursively explore each node"
+      },
+      {
+        "Problem Name": "BFS",
+        "Description": "Breadth-first search on graph",
+        "Approach": "Use queue to explore level by level"
+      },
+      {
+        "Problem Name": "Detect A cycle in Undirected Graph using BFS",
+        "Description": "Check cycle in undirected graph",
+        "Approach": "Use BFS with parent tracking"
+      },
+      {
+        "Problem Name": "Detect A cycle in Undirected Graph using DFS",
+        "Description": "Check cycle in undirected graph",
+        "Approach": "Use DFS with visited and recursion stack"
+      },
+      {
+        "Problem Name": "Detect A cycle in a Directed Graph using DFS",
+        "Description": "Check cycle in directed graph",
+        "Approach": "Use DFS with path and visited tracking"
+      },
+      {
+        "Problem Name": "Detect A cycle in a Directed Graph using BFS",
+        "Description": "Check cycle in directed graph",
+        "Approach": "Use Kahn's algo with indegree check"
+      },
+      {
+        "Problem Name": "Topological Sort BFS",
+        "Description": "Topological sort using BFS",
+        "Approach": "Use Kahn's algorithm with queue"
+      },
+      {
+        "Problem Name": "Topological Sort DFS",
+        "Description": "Topological sort using DFS",
+        "Approach": "Use DFS with stack for finish order"
+      },
+      {
+        "Problem Name": "Number of islands",
+        "Description": "Count number of islands in grid/graph",
+        "Approach": "Use DFS/BFS to count disconnected components"
+      },
+      {
+        "Problem Name": "Bipartite Check using BFS",
+        "Description": "Check if graph is bipartite",
+        "Approach": "Use BFS with two-color approach"
+      },
+      {
+        "Problem Name": "Bipartite Check using DFS",
+        "Description": "Check if graph is bipartite",
+        "Approach": "Use DFS with two-color approach"
+      },
+      {
+        "Problem Name": "Strongly Connected Component (Kosaraju’s algo)",
+        "Description": "Find SCCs in directed graph",
+        "Approach": "Use two DFS passes with reversed graph"
+      },
+      {
+        "Problem Name": "Dijkstra’s Algorithm",
+        "Description": "Find shortest path from source",
+        "Approach": "Use priority queue for min distance"
+      },
+      {
+        "Problem Name": "Bellman-Ford Algo",
+        "Description": "Find shortest paths with negative weights",
+        "Approach": "Relax edges V-1 times"
+      },
+      {
+        "Problem Name": "Floyd Warshall Algorithm",
+        "Description": "Find all-pairs shortest paths",
+        "Approach": "Use DP with adjacency matrix"
+      },
+      {
+        "Problem Name": "MST using Prim's Algo",
+        "Description": "Find minimum spanning tree",
+        "Approach": "Use priority queue for min edge"
+      },
+      {
+        "Problem Name": "MST using Kruskal’s Algo",
+        "Description": "Find minimum spanning tree",
+        "Approach": "Use union-find with sorted edges"
+      }
+    ],
+    "Dynamic Programming": [
+      {
+        "Problem Name": "Longest Increasing Subsequence",
+        "Description": "Find length of longest increasing subsequence",
+        "Approach": "Use DP with previous element comparison"
+      },
+      {
+        "Problem Name": "Longest Common Subsequence",
+        "Description": "Find length of longest common subsequence",
+        "Approach": "Use 2D DP table with string comparison"
+      },
+      {
+        "Problem Name": "0-1 Knapsack",
+        "Description": "Maximize value in knapsack with 0/1 items",
+        "Approach": "Use 2D DP with weight and value"
+      },
+      {
+        "Problem Name": "Edit Distance",
+        "Description": "Find min operations to convert one string to another",
+        "Approach": "Use 2D DP with insert/delete/replace"
+      },
+      {
+        "Problem Name": "Maximum sum increasing subsequence",
+        "Description": "Find max sum of increasing subsequence",
+        "Approach": "Use DP with sum tracking"
+      },
+      {
+        "Problem Name": "Matrix Chain Multiplication",
+        "Description": "Minimize cost of matrix multiplication",
+        "Approach": "Use DP with optimal parentheses"
+      },
+      {
+        "Problem Name": "Coin change",
+        "Description": "Find min coins to make amount",
+        "Approach": "Use DP with coin denominations"
+      },
+      {
+        "Problem Name": "Subset Sum",
+        "Description": "Check if subset sums to target",
+        "Approach": "Use DP with subset inclusion"
+      },
+      {
+        "Problem Name": "Rod Cutting",
+        "Description": "Maximize profit by cutting rod",
+        "Approach": "Use DP with cut lengths"
+      },
+      {
+        "Problem Name": "Egg Dropping",
+        "Description": "Minimize trials to find critical floor",
+        "Approach": "Use DP with egg and floor states"
+      },
+      {
+        "Problem Name": "Maximum Sum Combination",
+        "Description": "Find max sum of k elements from arrays",
+        "Approach": "Use priority queue or DP"
+      },
+      {
+        "Problem Name": "Kth Largest Element",
+        "Description": "Find kth largest element in stream",
+        "Approach": "Use min-heap of size k"
+      },
+      {
+        "Problem Name": "Find Median from Data Stream",
+        "Description": "Find median from a stream",
+        "Approach": "Use two heaps for balance"
+      }
+    ],
+    "Trie": [
+      {
+        "Problem Name": "Implement Trie (Prefix Tree)",
+        "Description": "Implement trie for prefix operations",
+        "Approach": "Use nodes with children array and end flag"
+      },
+      {
+        "Problem Name": "Implement Trie - 2 (Prefix Tree)",
+        "Description": "Extend trie with advanced operations",
+        "Approach": "Add search and prefix search functionality"
+      },
+      {
+        "Problem Name": "Longest String with All Prefixes",
+        "Description": "Find longest string where all prefixes exist",
+        "Approach": "Use trie to check prefix completeness"
+      },
+      {
+        "Problem Name": "Number of Distinct Substrings in a String",
+        "Description": "Count distinct substrings",
+        "Approach": "Use trie or suffix array with insertion"
+      },
+      {
+        "Problem Name": "Maximum XOR of two numbers in an array",
+        "Description": "Find max XOR of any two numbers",
+        "Approach": "Use trie with binary representation"
+      },
+      {
+        "Problem Name": "Maximum XOR With an Element From Array",
+        "Description": "Find max XOR with any array element",
+        "Approach": "Use trie with binary insertion"
+      },
+      {
+        "Problem Name": "Implement STRSTR (via Rabin Karp/KMP)",
+        "Description": "Find substring in string",
+        "Approach": "Use trie or rolling hash/KMP"
+      }
+    ],
+    "Heaps": [
+      {
+        "Problem Name": "Max heap, Min Heap Implementation",
+        "Description": "Implement max and min heaps",
+        "Approach": "Use array with heapify operations"
+      },
+      {
+        "Problem Name": "Kth Largest Element",
+        "Description": "Find kth largest in array",
+        "Approach": "Use min-heap of size k"
+      },
+      {
+        "Problem Name": "Maximum Sum Combination",
+        "Description": "Find max sum of k elements from arrays",
+        "Approach": "Use max-heap to pick top elements"
+      },
+      {
+        "Problem Name": "Merge K sorted arrays",
+        "Description": "Merge k sorted arrays into one",
+        "Approach": "Use min-heap to merge efficiently"
+      }
+    ]
+  }
