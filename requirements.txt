@@ -1,5 +1,9 @@
-Flask
-Flask-SQLAlchemy
-psycopg2-binary
-Flask-Dance[google]
-python-dotenv
+Flask==2.2.3
+Werkzeug==2.2.3
+SQLAlchemy==2.0.0
+Flask-SQLAlchemy==3.0.3
+Flask-Session==0.4.0
+Flask-Dance==6.2.0
+gunicorn==20.1.0
+psycopg2-binary==2.9.5
+python-dotenv==1.0.0

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session
 import os
 from werkzeug.utils import secure_filename
 import logging
@@ -9,6 +9,7 @@ from extensions import db  # Import db from extensions.py
 from flask_session import Session  # Add this import
 import functools
 from utils.session_utils import clear_invalid_sessions
+import urllib.parse
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -18,16 +19,17 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'  # True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_FILE_DIR'] = 'flask_sessions'  # Configure your session directory
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session lifetime in seconds
 
+if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
 # Initialize session
 Session(app)
 
 # Configure PostgreSQL (replace username, password, and host as needed)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://flashcard_app_rpjk_user:C9PcHhF2MweO3bHMyGu23fqlTRMNCelQ@dpg-cv1dlk1u0jms738aftf0-a.singapore-postgres.render.com/flashcard_app_rpjk'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
@@ -35,7 +37,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configure logging with more details
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.DEBUG if os.environ.get('FLASK_ENV') != 'production' else logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -43,8 +45,12 @@ logger = logging.getLogger(__name__)
 # Log OAuth configuration for debugging
 logger.debug(f"Google OAuth Client ID: {app.config.get('GOOGLE_OAUTH_CLIENT_ID', 'Not set')}")
 logger.debug(f"Google OAuth Redirect URI: {app.config.get('GOOGLE_REDIRECT_URI', 'Not set')}")
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"  # Add this to relax scope validation
+
+# Only set these in development
+if os.environ.get('FLASK_ENV') != 'production':
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+    os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
+
 # Google OAuth setup - Fixed parameter name from redirect_url to redirect_uri
 blueprint = make_google_blueprint(
     client_id=app.config.get('GOOGLE_OAUTH_CLIENT_ID'),
@@ -64,9 +70,20 @@ db.init_app(app)
 # Import models after db is initialized with app
 from models import User, Topic, Flashcard
 
-# Create tables
-with app.app_context():
-    db.create_all()
+# Create upload directory and database tables during app initialization
+def init_app():
+    # Create upload directory
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+        logger.info(f"Created upload directory: {app.config['UPLOAD_FOLDER']}")
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        logger.info("Database tables created successfully")
+
+# Run initialization function
+init_app()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -339,9 +356,15 @@ def cleanup_sessions():
         clear_invalid_sessions(app)
 
 if __name__ == '__main__':
-    # Ensure upload directory exists
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
-        logger.info(f"Created upload directory: {app.config['UPLOAD_FOLDER']}")
-        
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Use environment variable to control debug mode
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    port = int(os.environ.get('PORT', 5000))
+    
+    if os.environ.get('FLASK_ENV') == 'production':
+        # In production, use a proper WSGI server
+        logger.info(f"Running in production mode on port {port}")
+        app.run(host='0.0.0.0', port=port, debug=False)
+    else:
+        # In development
+        logger.info(f"Running in development mode on port {port}")
+        app.run(host='0.0.0.0', port=port, debug=debug_mode)
