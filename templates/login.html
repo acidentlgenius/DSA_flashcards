@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DSA Flashcards - Login</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .login-container {
+        text-align: center;
+        margin-top: 100px;
+      }
+      .login-button {
+        display: inline-block;
+        background-color: #4285F4;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      .login-button:hover {
+        background-color: #3367D6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <h1>Welcome to DSA Flashcards</h1>
+      <p>Please sign in with your Google account to continue</p>
+      <a href="{{ url_for('google.login') }}" class="login-button">Sign in with Google</a>
+    </div>
+  </body>
+</html>

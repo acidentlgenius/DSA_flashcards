@@ -5,10 +5,26 @@ import logging
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.consumer import oauth_authorized
 from config import Config
-from models import db, User, Topic, Flashcard  # Import db first, then models
+from extensions import db  # Import db from extensions.py
+from flask_session import Session  # Add this import
+import functools
+from utils.session_utils import clear_invalid_sessions
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Configure server-side session
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_FILE_DIR'] = 'flask_sessions'  # Configure your session directory
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session lifetime in seconds
+
+# Initialize session
+Session(app)
 
 # Configure PostgreSQL (replace username, password, and host as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://flashcard_app_rpjk_user:C9PcHhF2MweO3bHMyGu23fqlTRMNCelQ@dpg-cv1dlk1u0jms738aftf0-a.singapore-postgres.render.com/flashcard_app_rpjk'
@@ -17,35 +33,36 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging with more details
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Google OAuth setup
-google_bp = make_google_blueprint(
+# Log OAuth configuration for debugging
+logger.debug(f"Google OAuth Client ID: {app.config.get('GOOGLE_OAUTH_CLIENT_ID', 'Not set')}")
+logger.debug(f"Google OAuth Redirect URI: {app.config.get('GOOGLE_REDIRECT_URI', 'Not set')}")
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"  # Add this to relax scope validation
+# Google OAuth setup - Fixed parameter name from redirect_url to redirect_uri
+blueprint = make_google_blueprint(
     client_id=app.config.get('GOOGLE_OAUTH_CLIENT_ID'),
     client_secret=app.config.get('GOOGLE_OAUTH_CLIENT_SECRET'),
-    scope=["profile", "email"],
-    redirect_to="index",
-    # Important: Make sure this matches what's in Google Cloud Console
-    redirect_url=None,  # Use the default /login/google/authorized
-    reprompt_consent=True  # Add this to ensure Google always asks for consent
+    scope=[
+        "openid",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "https://www.googleapis.com/auth/userinfo.profile"
+    ],
+    redirect_to="authorized_callback"  # This is key - redirect to our handler after OAuth
 )
-app.register_blueprint(google_bp, url_prefix="/login")
+app.register_blueprint(blueprint, url_prefix="/login")
 
-# Add debug endpoint to check OAuth state
-@app.route('/oauth-debug')
-def oauth_debug():
-    debug_info = {
-        'google_authorized': google.authorized if 'google' in locals() else False,
-        'client_id': app.config.get('GOOGLE_OAUTH_CLIENT_ID', 'Not configured')[:10] + '...' if app.config.get('GOOGLE_OAUTH_CLIENT_ID') else 'Not configured',
-        'redirect_url': url_for('google.login', _external=True),
-        'callback_url': url_for('google.authorized', _external=True)
-    }
-    return render_template('oauth_debug.html', debug_info=debug_info)
-
-# Initialize the db with our app
+# Initialize the app with the SQLAlchemy instance
 db.init_app(app)
+
+# Import models after db is initialized with app
+from models import User, Topic, Flashcard
 
 # Create tables
 with app.app_context():
@@ -69,79 +86,80 @@ def delete_file(file_path):
         logger.error(f"Error deleting file {file_path}: {str(e)}")
         return False
 
-
-# OAuth signal handler
-@oauth_authorized.connect_via(google_bp)
-def google_logged_in(blueprint, token):
-    if not token:
-        flash("Failed to log in with Google.", "error")
-        return False
-
-    resp = blueprint.session.get("/oauth2/v2/userinfo")
-    if not resp.ok:
-        flash("Failed to fetch user info from Google.", "error")
-        return False
-
-    google_info = resp.json()
-    google_id = google_info["id"]
-
-    user = User.query.filter_by(google_id=google_id).first()
-    if not user:
-        user = User(
-            google_id=google_id,
-            email=google_info["email"],
-            name=google_info.get("name")
-        )
-        db.session.add(user)
-        db.session.commit()
-
-    return False  # Prevent default redirect
-
-# Login route
-@app.route("/login")
-def login():
-    if not google.authorized:
-        # Log attempt to help with debugging
-        logger.info(f"Login attempt - redirecting to Google OAuth")
-        return redirect(url_for("google.login"))
-    logger.info("User already authorized, redirecting to index")
-    return redirect(url_for("index"))
-
-# Logout route
-@app.route("/logout")
-def logout():
-    if google.authorized:
-        token = google_bp.token["access_token"]
-        google.post(
-            "https://accounts.google.com/o/oauth2/revoke",
-            params={"token": token},
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
-        )
-    del google_bp.token
-    flash("You have been logged out.", "success")
-    return redirect(url_for("index"))
-
-# Protected route decorator
-def login_required(func):
-    def wrapper(*args, **kwargs):
+# Login required decorator
+def login_required(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
         if not google.authorized:
-            flash("Please login first.", "warning")
-            return redirect(url_for("login"))
-        return func(*args, **kwargs)
-    wrapper.__name__ = func.__name__
-    return wrapper
+            logger.debug("User not authorized, redirecting to login")
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
-# Home route: List all topics
+# Homepage route
 @app.route('/')
 def index():
-    topics = Topic.query.all()
-    user_info = None
     if google.authorized:
-        resp = google.get("/oauth2/v2/userinfo")
-        if resp.ok:
-            user_info = resp.json()
+        logger.debug("Home page: User is authorized, redirecting to dashboard")
+        return redirect(url_for('dashboard'))
+    logger.debug("Home page: User not authorized, showing login page")
+    return render_template('login.html')
+
+# Login route
+@app.route('/login')
+def login():
+    logger.debug("Login route accessed")
+    return redirect(url_for('google.login'))
+
+# Callback after successful OAuth
+@app.route('/authorized-callback')
+def authorized_callback():
+    logger.debug(f"In authorized_callback, authorized: {google.authorized}")
+    if not google.authorized:
+        flash("Authentication failed.", "error")
+        return redirect(url_for('index'))
+    
+    # Get user info from Google
+    resp = google.get("/oauth2/v2/userinfo")
+    if resp.ok:
+        user_info = resp.json()
+        # Store in db if needed...
+        return redirect(url_for('dashboard'))
+    else:
+        flash("Failed to fetch user info.", "error")
+        return redirect(url_for('index'))
+
+# Dashboard page
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    logger.debug(f"Dashboard route - authorized: {google.authorized}")
+    topics = Topic.query.all()
+    
+    # Get user info
+    resp = google.get("/oauth2/v2/userinfo")
+    user_info = resp.json() if resp.ok else None
+    
     return render_template('index.html', topics=topics, user_info=user_info)
 
+# Logout route
+@app.route('/logout')
+def logout():
+    if google.authorized:
+        # Clear token
+        token = blueprint.token.pop("access_token", None)
+        if token:
+            resp = google.post(
+                "https://accounts.google.com/o/oauth2/revoke",
+                params={"token": token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+            logger.debug(f"Token revocation: {resp.status_code}")
+    
+    # Clear session
+    session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for('index'))
 
 # Topic route: Show flashcards for a topic
 @app.route('/topic/<int:topic_id>')
@@ -311,6 +329,14 @@ def search():
     else:
         cards = []
     return render_template('search.html', cards=cards, query=query)
+
+@app.before_request
+def cleanup_sessions():
+    # This will run before each request, but you could add logic to
+    # only run it occasionally to reduce overhead
+    import random
+    if random.random() < 0.05:  # ~5% chance to run on any request
+        clear_invalid_sessions(app)
 
 if __name__ == '__main__':
     # Ensure upload directory exists
