@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="current">Search Results</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<h2>Search Results {% if query %}for "{{ query }}"{% endif %}</h2>
+
+{% if not query %}
+    <p>Enter a search term to find flashcards.</p>
+{% elif not cards %}
+    <p>No flashcards found matching your search.</p>
+{% else %}
+    <div class="flashcard-container">
+        {% for card in cards %}
+        <div class="flip-card">
+            <div class="flip-card-inner">
+                <a href="{{ url_for('edit_card', card_id=card.id) }}" class="edit-btn">
+                </a>
+                <div class="flip-card-front">
+                    <h3>{{ card.problem_name }}</h3>
+                    <p>{{ card.description[:200] }}{% if card.description|length > 200 %}...{% endif %}</p>
+                    <div class="difficulty-badge {{ card.difficulty.lower() }}">
+                        {{ card.difficulty }}
+                    </div>
+                    <p><small>Topic: {{ card.topic.name }}</small></p>
+                </div>
+                <div class="flip-card-back">
+                    <h4>Approach:</h4>
+                    <p>{{ card.approach }}</p>
+                    {% if card.notes %}
+                    <h4>Notes:</h4>
+                    <p>{{ card.notes }}</p>
+                    {% endif %}
+                    {% if card.image_path %}
+                    <img src="{{ url_for('static', filename=card.image_path) }}" alt="Card image" class="flip-card-image">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
+{% endblock %}

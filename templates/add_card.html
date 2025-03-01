@@ -1,42 +1,88 @@
 {% extends "base.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="current">Add New Flashcard</span>
+</div>
+{% endblock %}
+
 {% block content %}
     <h1>Add New Flashcard</h1>
-    <form method="POST" action="{{ url_for('add_card') }}" class="form" enctype="multipart/form-data" onsubmit="return validateForm()">
-        <label for="topic">Topic:</label>
-        <select name="topic" id="topic" required>
-            {% for topic in topics %}
-                <option value="{{ topic.name }}" {% if request.args.get('topic') == topic.name %}selected{% endif %}>{{ topic.name }}</option>
-            {% endfor %}
-            <option value="Other">Other (New Topic)</option>
-        </select>
-        <label for="problem_name">Problem Name:</label>
-        <input type="text" name="problem_name" id="problem_name" placeholder="e.g., Two Sum" required>
-        <label for="description">Description:</label>
-        <textarea name="description" id="description" placeholder="Problem details" required></textarea>
-        <label for="approach">Approach:</label>
-        <textarea name="approach" id="approach" placeholder="Solution explanation" required></textarea>
-        <label for="difficulty">Difficulty:</label>
-        <select name="difficulty" id="difficulty">
-            <option value="Easy">Easy</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="Hard">Hard</option>
-        </select>
-        <label for="notes">Custom Notes (Optional):</label>
-        <textarea name="notes" id="notes" placeholder="Your personal notes"></textarea>
-        <label for="image">Attach Image (Optional):</label>
-        <input type="file" name="image" id="image" accept=".png,.jpg,.jpeg,.gif">
-        <button type="submit">Add Card</button>
-    </form>
-    <script>
-        function validateForm() {
-            const requiredInputs = document.querySelectorAll('input[required], textarea[required], select[required]');
-            for (let input of requiredInputs) {
-                if (!input.value.trim()) {
-                    alert('Please fill in all required fields.');
-                    return false;
-                }
-            }
-            return true;
+    <div class="container">
+        <form method="POST" action="{{ url_for('add_card') }}" class="form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="topic">Topic:</label>
+                <select name="topic" id="topic" required autofocus>
+                    {% for topic in topics %}
+                        <option value="{{ topic.name }}" {% if request.args.get('topic') == topic.name %}selected{% endif %}>{{ topic.name }}</option>
+                    {% endfor %}
+                    <option value="Other">Other (Create New Topic)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="newTopicGroup" style="display: none;">
+                <label for="new_topic_name">New Topic Name:</label>
+                <input type="text" id="new_topic_name" name="new_topic_name" placeholder="Enter new topic name">
+            </div>
+            
+            <div class="form-group">
+                <label for="problem_name">Problem Name:</label>
+                <input type="text" id="problem_name" name="problem_name" placeholder="Enter problem name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="difficulty">Difficulty:</label>
+                <select name="difficulty" id="difficulty">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" placeholder="Enter detailed description" rows="5" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="approach">Approach/Solution:</label>
+                <textarea id="approach" name="approach" placeholder="Enter your approach or solution" rows="5" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Additional Notes:</label>
+                <textarea id="notes" name="notes" placeholder="Enter additional notes (optional)" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="image">Image (optional):</label>
+                <input type="file" id="image" name="image" accept="image/*">
+                <small>Allowed formats: JPG, JPEG, PNG, GIF (max 16MB)</small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">Add Flashcard</button>
+                <a href="{{ url_for('index') }}" class="cancel-btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle showing/hiding the new topic input in a smoother way
+        const topicSelect = document.getElementById('topic');
+        const newTopicGroup = document.getElementById('newTopicGroup');
+        
+        topicSelect.addEventListener('change', function() {
+            newTopicGroup.style.display = (this.value === 'Other') ? 'block' : 'none';
+        });
+        
+        if (topicSelect.value === 'Other') {
+            newTopicGroup.style.display = 'block';
         }
-    </script>
+    });
+</script>
 {% endblock %}

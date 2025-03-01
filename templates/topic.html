@@ -1,25 +1,32 @@
 {% extends "base.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <a href="#" class="current">{{ topic.name }}</a>
+</div>
+{% endblock %}
+
 {% block content %}
     <h1>{{ topic.name }} Flashcards</h1>
-    {% if request.args.get('updated') %}
-        <div class="feedback">Card updated successfully!</div>
-    {% endif %}
+    
+    {% with message = added and "Flashcard successfully added!" or request.args.get('updated') and "Flashcard successfully updated!" %}
+        {% include 'partials/feedback.html' %}
+    {% endwith %}
+    
+    <a href="{{ url_for('add_card_form') }}?topic={{ topic.name }}" class="add-btn">
+        <i class="fas fa-plus"></i> Add New Flashcard
+    </a>
+    
     <div class="flashcard-container">
         {% for card in cards %}
-            <div class="flashcard">
-                <h2>{{ card.problem_name }}</h2>
-                <p><strong>Description:</strong> {{ card.description }}</p>
-                <p><strong>Approach:</strong> {{ card.approach }}</p>
-                <p><strong>Difficulty:</strong> {{ card.difficulty }}</p>
-                {% if card.notes %}
-                    <p><strong>Notes:</strong> {{ card.notes }}</p>
-                {% endif %}
-                {% if card.image_path %}
-                    <img src="{{ url_for('static', filename=card.image_path) }}" alt="Flashcard Image" style="max-width: 100%;">
-                {% endif %}
-                <a href="{{ url_for('edit_card', card_id=card.id) }}" class="edit-btn">Edit</a>
-            </div>
+            {% include 'partials/flashcard.html' %}
+        {% else %}
+            <p>No flashcards available for this topic yet.</p>
         {% endfor %}
     </div>
-    <a href="{{ url_for('add_card_form') }}?topic={{ topic.name }}" class="add-btn">Add New Card</a>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
 {% endblock %}

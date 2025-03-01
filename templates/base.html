@@ -3,37 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Striver's SDE Flashcards</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>DSA Flashcards</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">Striver's SDE Flashcards</div>
-        <ul class="nav-links">
-            <li><a href="{{ url_for('index') }}" {% if request.path == '/' %}class="active"{% endif %}>Home</a></li>
-            <li><a href="{{ url_for('add_card_form') }}" {% if 'add_card' in request.path %}class="active"{% endif %}>Add Card</a></li>
-        </ul>
-        <div class="hamburger" tabindex="0" role="button" aria-label="Menu">☰</div>
-    </nav>
+    <header>
+        <div class="container">
+            <h1>DSA Flashcards</h1>
+            <div class="search-bar">
+                <form action="{{ url_for('search') }}" method="get">
+                    <input type="search" name="q" placeholder="Search flashcards..." value="{{ request.args.get('q', '') }}">
+                    <button type="submit"><i class="fas fa-search"></i></button>
+                </form>
+            </div>
+        </div>
+    </header>
+    
     <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+        {% block breadcrumbs %}{% endblock %}
         {% block content %}{% endblock %}
     </div>
-    <script>
-        const hamburger = document.querySelector('.hamburger');
-        const navLinks = document.querySelector('.nav-links');
-        hamburger.addEventListener('click', () => navLinks.classList.toggle('active'));
-        hamburger.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') navLinks.classList.toggle('active');
-        });
-    </script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

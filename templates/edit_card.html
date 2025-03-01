@@ -1,77 +1,120 @@
 {% extends "base.html" %}
 {% block content %}
     <h1>Edit Flashcard</h1>
-    <form method="POST" action="{{ url_for('edit_card', card_id=flashcard.id) }}" class="form" enctype="multipart/form-data" onsubmit="return validateForm()">
-        <label for="topic">Topic:</label>
-        <select name="topic" id="topic" required onchange="toggleNewTopicInput()">
-            {% for topic in topics %}
-                <option value="{{ topic.name }}" {% if topic.name == flashcard.topic.name %}selected{% endif %}>{{ topic.name }}</option>
-            {% endfor %}
-            <option value="Other">Other (New Topic)</option>
-        </select>
-        <div id="new_topic_input" style="display: none;">
-            <label for="new_topic_name">New Topic Name:</label>
-            <input type="text" name="new_topic_name" id="new_topic_name">
-        </div>
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert">
+              {% for message in messages %}
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+    
+        <form method="POST" action="{{ url_for('edit_card', card_id=flashcard.id) }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="topic">Topic:</label>
+                <select name="topic" id="topic" required autofocus>
+                    {% for topic in topics %}
+                        <option value="{{ topic.name }}" {% if topic.id == flashcard.topic_id %}selected{% endif %}>{{ topic.name }}</option>
+                    {% endfor %}
+                    <option value="Other">Other (Create New Topic)</option>
+                </select>
+            </div>
+                
+            <div class="form-group" id="newTopicGroup" style="display: none;">
+                <label for="new_topic_name">New Topic Name:</label>
+                <input type="text" id="new_topic_name" name="new_topic_name" placeholder="Enter new topic name">
+            </div>
+                
+            <div class="form-group">
+                <label for="problem_name">Problem Name:</label>
+                <input type="text" id="problem_name" name="problem_name" placeholder="Enter problem name" value="{{ flashcard.problem_name }}" required>
+            </div>
+                
+            <div class="form-group">
+                <label for="difficulty">Difficulty:</label>
+                <select name="difficulty" id="difficulty">
+                    <option value="Easy" {% if flashcard.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                    <option value="Medium" {% if flashcard.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
+                    <option value="Hard" {% if flashcard.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                </select>
+            </div>
+                
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" placeholder="Enter detailed description" rows="5" required>{{ flashcard.description }}</textarea>
+            </div>
+                
+            <div class="form-group">
+                <label for="approach">Approach/Solution:</label>
+                <textarea id="approach" name="approach" placeholder="Enter your approach or solution" rows="5" required>{{ flashcard.approach }}</textarea>
+            </div>
+                
+            <div class="form-group">
+                <label for="notes">Additional Notes:</label>
+                <textarea id="notes" name="notes" placeholder="Enter additional notes (optional)" rows="3">{{ flashcard.notes }}</textarea>
+            </div>
+                
+            <div class="form-group">
+                <label>Image:</label>
+                {% if flashcard.image_path %}
+                    <div class="current-image">
+                        <img src="{{ url_for('static', filename=flashcard.image_path) }}" alt="Current image" style="max-width: 300px;">
+                        <div>
+                            <label for="remove_image">
+                                <input type="checkbox" id="remove_image" name="remove_image" value="true">
+                                Remove this image
+                            </label>
+                            <small>Checking this will remove the current image from the flashcard.</small>
+                        </div>
+                    </div>
+                {% endif %}
+                <input type="file" id="image" name="image" accept="image/*">
+                <small>Allowed formats: JPG, JPEG, PNG, GIF (max 16MB)</small>
+            </div>
+                
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">Save Changes</button>
+                <a href="{{ url_for('topic', topic_id=flashcard.topic_id) }}" class="cancel-btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
 
-        <label for="problem_name">Problem Name:</label>
-        <input type="text" name="problem_name" id="problem_name" value="{{ flashcard.problem_name }}" required>
-
-        <label for="description">Description:</label>
-        <textarea name="description" id="description" required>{{ flashcard.description }}</textarea>
-
-        <label for="approach">Approach:</label>
-        <textarea name="approach" id="approach" required>{{ flashcard.approach }}</textarea>
-
-        <label for="difficulty">Difficulty:</label>
-        <select name="difficulty" id="difficulty">
-            <option value="Easy" {% if flashcard.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
-            <option value="Medium" {% if flashcard.difficulty == 'Medium' %}selected{% endif %}>Medium</option>
-            <option value="Hard" {% if flashcard.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
-        </select>
-
-        <label for="notes">Custom Notes (Optional):</label>
-        <textarea name="notes" id="notes">{{ flashcard.notes }}</textarea>
-
-        <label for="image">Attach Image (Optional):</label>
-        {% if flashcard.image_path %}
-            <p>Current Image: <img src="{{ url_for('static', filename=flashcard.image_path) }}" alt="Current Image" style="max-width: 200px;"></p>
-        {% endif %}
-        <input type="file" name="image" id="image" accept=".png,.jpg,.jpeg,.gif">
-
-        <button type="submit">Update Card</button>
-    </form>
-
-    <script>
-        function toggleNewTopicInput() {
-            const topicSelect = document.getElementById('topic');
-            const newTopicInput = document.getElementById('new_topic_input');
-            if (topicSelect.value === 'Other') {
-                newTopicInput.style.display = 'block';
-            } else {
-                newTopicInput.style.display = 'none';
-            }
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle showing/hiding the new topic input with enhanced UX
+        const topicSelect = document.getElementById('topic');
+        const newTopicGroup = document.getElementById('newTopicGroup');
+        
+        topicSelect.addEventListener('change', function() {
+            newTopicGroup.style.display = (this.value === 'Other') ? 'block' : 'none';
+        });
+        
+        if (topicSelect.value === 'Other') {
+            newTopicGroup.style.display = 'block';
         }
-        // Set initial state based on current selection
-        toggleNewTopicInput();
-
-        function validateForm() {
-            const topicSelect = document.getElementById('topic');
-            if (topicSelect.value === 'Other') {
-                const newTopicName = document.getElementById('new_topic_name').value.trim();
-                if (!newTopicName) {
-                    alert('Please provide a new topic name.');
-                    return false;
+        
+        // Handle file upload and removal selection
+        const imageInput = document.getElementById('image');
+        const removeCheckbox = document.getElementById('remove_image');
+        
+        if (removeCheckbox && imageInput) {
+            imageInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    removeCheckbox.checked = false;
                 }
-            }
-            const requiredInputs = document.querySelectorAll('input[required], textarea[required], select[required]');
-            for (let input of requiredInputs) {
-                if (!input.value.trim()) {
-                    alert('Please fill in all required fields.');
-                    return false;
+            });
+            
+            removeCheckbox.addEventListener('change', function() {
+                if (this.checked && imageInput.value) {
+                    imageInput.value = '';
                 }
-            }
-            return true;
+            });
         }
-    </script>
+    });
+</script>
 {% endblock %}

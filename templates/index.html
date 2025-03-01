@@ -1,9 +1,55 @@
 {% extends "base.html" %}
+
+{% if user_info %}
+    <p>Welcome, {{ user_info.name }}! (<a href="{{ url_for('logout') }}">Logout</a>)</p>
+{% else %}
+    <p><a href="{{ url_for('login') }}">Login with Google</a></p>
+{% endif %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}" class="current"><i class="fas fa-home"></i> Home</a>
+</div>
+{% endblock %}
+
 {% block content %}
-    <h1>Topics</h1>
-    <ul class="topic-list">
+    <h1>DSA Topics</h1>
+    <div class="topic-grid">
         {% for topic in topics %}
-            <li><a href="{{ url_for('topic', topic_id=topic.id) }}">{{ topic.name }}</a></li>
+            <div class="topic-card">
+                <div class="topic-card-header">
+                    {{ topic.name }}
+                </div>
+                <div class="topic-card-body">
+                    <div class="topic-stats">
+                        <p><i class="fas fa-clipboard-list"></i> {{ topic.flashcards|length }} flashcards</p>
+                        {% set difficulties = {'Easy': 0, 'Medium': 0, 'Hard': 0} %}
+                        {% for card in topic.flashcards %}
+                            {% if card.difficulty == 'Easy' %}
+                                {% set _ = difficulties.update({'Easy': difficulties['Easy'] + 1}) %}
+                            {% elif card.difficulty == 'Medium' %}
+                                {% set _ = difficulties.update({'Medium': difficulties['Medium'] + 1}) %}
+                            {% elif card.difficulty == 'Hard' %}
+                                {% set _ = difficulties.update({'Hard': difficulties['Hard'] + 1}) %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if difficulties['Easy'] > 0 %}
+                            <p><span style="color: #27ae60;"><i class="fas fa-circle"></i> Easy: {{ difficulties['Easy'] }}</span></p>
+                        {% endif %}
+                        {% if difficulties['Medium'] > 0 %}
+                            <p><span style="color: #f39c12;"><i class="fas fa-circle"></i> Medium: {{ difficulties['Medium'] }}</span></p>
+                        {% endif %}
+                        {% if difficulties['Hard'] > 0 %}
+                            <p><span style="color: #e74c3c;"><i class="fas fa-circle"></i> Hard: {{ difficulties['Hard'] }}</span></p>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('topic', topic_id=topic.id) }}" class="topic-view-btn">
+                        <i class="fas fa-eye"></i> View Flashcards
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <p>No topics available. <a href="{{ url_for('add_card_form') }}">Add your first flashcard</a> to create a topic.</p>
         {% endfor %}
-    </ul>
+    </div>
 {% endblock %}
