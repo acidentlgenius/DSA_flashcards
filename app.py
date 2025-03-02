@@ -9,6 +9,7 @@ from extensions import db  # Import db from extensions.py
 from flask_session import Session  # Add this import
 import functools
 from utils.session_utils import clear_invalid_sessions
+from utils.db_utils import handle_db_errors, test_connection
 import urllib.parse
 
 app = Flask(__name__)
@@ -85,6 +86,19 @@ def init_app():
 # Run initialization function
 init_app()
 
+# Add before_request handler to ensure database connection is valid
+@app.before_request
+def ensure_db_connection():
+    # Skip for static files and assets
+    if request.path.startswith('/static/') or request.path == '/favicon.ico':
+        return
+    
+    # Test database connection
+    if not test_connection(db):
+        # If connection test fails, try to reconnect
+        logger.warning("Database connection appears to be down, refreshing session")
+        db.session.remove()  # Close any existing connections
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -146,9 +160,10 @@ def authorized_callback():
         flash("Failed to fetch user info.", "error")
         return redirect(url_for('index'))
 
-# Dashboard page
+# Dashboard page with error handling
 @app.route('/dashboard')
 @login_required
+@handle_db_errors  # Add error handling decorator
 def dashboard():
     logger.debug(f"Dashboard route - authorized: {google.authorized}")
     topics = Topic.query.all()
@@ -178,9 +193,10 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for('index'))
 
-# Topic route: Show flashcards for a topic
+# Topic route: Show flashcards for a topic with error handling
 @app.route('/topic/<int:topic_id>')
 @login_required
+@handle_db_errors  # Add error handling decorator
 def topic(topic_id):
     topic = Topic.query.get_or_404(topic_id)
     cards = Flashcard.query.filter_by(topic_id=topic_id).all()
@@ -194,9 +210,10 @@ def add_card_form():
     topics = Topic.query.all()
     return render_template('add_card.html', topics=topics)
 
-# Add new card
+# Add new card with error handling
 @app.route('/add_card', methods=['POST'])
 @login_required
+@handle_db_errors  # Add error handling decorator
 def add_card():
     topic_name = request.form['topic']
     problem_name = request.form['problem_name']
@@ -244,8 +261,10 @@ def add_card():
 def uploaded_file(filename):
     return send_from_directory('static/uploads', filename)
 
+# Edit card with error handling
 @app.route('/edit_card/<int:card_id>', methods=['GET', 'POST'])
 @login_required
+@handle_db_errors  # Add error handling decorator
 def edit_card(card_id):
     # Fetch the flashcard or return 404 if it doesn't exist
     flashcard = Flashcard.query.get_or_404(card_id)
@@ -329,8 +348,35 @@ def edit_card(card_id):
     # Render the edit form for GET request
     return render_template('edit_card.html', flashcard=flashcard, topics=topics)
 
+# Delete card with error handling
+@app.route('/delete_card/<int:card_id>', methods=['POST'])
+@login_required
+@handle_db_errors  # Add error handling decorator
+def delete_card(card_id):
+    # Fetch the flashcard or return 404 if it doesn't exist
+    flashcard = Flashcard.query.get_or_404(card_id)
+    topic_id = flashcard.topic_id  # Store before deletion
+    
+    # Delete associated image if it exists
+    if flashcard.image_path:
+        if not flashcard.image_path.startswith('static/'):
+            full_path = os.path.join('static', flashcard.image_path)
+        else:
+            full_path = flashcard.image_path
+        
+        delete_file(full_path)
+    
+    # Delete the flashcard from database
+    db.session.delete(flashcard)
+    db.session.commit()
+    
+    flash('Flashcard successfully deleted', 'success')
+    return redirect(url_for('topic', topic_id=topic_id))
+
+# Search with error handling
 @app.route('/search')
 @login_required
+@handle_db_errors  # Add error handling decorator
 def search():
     query = request.args.get('q', '')
     if query:

@@ -38,7 +38,12 @@
                     <p>{{ card.notes }}</p>
                     {% endif %}
                     {% if card.image_path %}
-                    <img src="{{ url_for('static', filename=card.image_path) }}" alt="Card image" class="flip-card-image">
+                    <div class="flip-card-image-container">
+                        <img src="{{ url_for('static', filename=card.image_path) }}" 
+                             alt="Card image" 
+                             class="flip-card-image clickable-image"
+                             data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                    </div>
                     {% endif %}
                 </div>
             </div>

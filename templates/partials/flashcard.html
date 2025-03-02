@@ -7,9 +7,7 @@
                 {{ card.difficulty }}
             </div>
             <p>{{ card.description }}</p>
-            {% if card.image_path %}
-                <img class="flip-card-image" src="{{ url_for('static', filename=card.image_path) }}" alt="Problem visualization">
-            {% endif %}
+            <!-- No images on front side -->
         </div>
         <div class="flip-card-back">
             <h3>Solution Approach</h3>
@@ -17,6 +15,14 @@
             {% if card.notes %}
                 <h4>Notes:</h4>
                 <p>{{ card.notes }}</p>
+            {% endif %}
+            {% if card.image_path %}
+                <div class="flip-card-image-container">
+                    <img class="flip-card-image clickable-image" 
+                         src="{{ url_for('static', filename=card.image_path) }}" 
+                         alt="Problem visualization"
+                         data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                </div>
             {% endif %}
         </div>
     </div>

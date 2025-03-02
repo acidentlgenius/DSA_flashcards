@@ -1,32 +1,53 @@
 {% extends "base.html" %}
+
 {% block breadcrumbs %}
 <div class="breadcrumbs">
     <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
     <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
-    <a href="#" class="current">{{ topic.name }}</a>
+    <span class="current">{{ topic.name }}</span>
 </div>
 {% endblock %}
 
 {% block content %}
-    <h1>{{ topic.name }} Flashcards</h1>
+    <h1>{{ topic.name }}</h1>
     
-    {% with message = added and "Flashcard successfully added!" or request.args.get('updated') and "Flashcard successfully updated!" %}
-        {% include 'partials/feedback.html' %}
-    {% endwith %}
-    
-    <a href="{{ url_for('add_card_form') }}?topic={{ topic.name }}" class="add-btn">
-        <i class="fas fa-plus"></i> Add New Flashcard
-    </a>
+    {% if added %}
+        <div class="feedback">Flashcard added successfully!</div>
+    {% endif %}
     
     <div class="flashcard-container">
         {% for card in cards %}
-            {% include 'partials/flashcard.html' %}
-        {% else %}
-            <p>No flashcards available for this topic yet.</p>
+            <div class="flip-card">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <span class="difficulty-badge {{ card.difficulty.lower() }}"></span>
+                        <a href="{{ url_for('edit_card', card_id=card.id) }}" class="edit-btn" title="Edit Flashcard"></a>
+                        <h3>{{ card.problem_name }}</h3>
+                        <p>{{ card.description|safe }}</p>
+                    </div>
+                    <div class="flip-card-back">
+                        <h3>Solution Approach</h3>
+                        <p>{{ card.approach|safe }}</p>
+                        {% if card.notes %}
+                            <h4>Notes</h4>
+                            <p>{{ card.notes|safe }}</p>
+                        {% endif %}
+                        
+                        {% if card.image_path %}
+                            <div class="flip-card-image-container">
+                                <img class="flip-card-image clickable-image" 
+                                     src="{{ url_for('static', filename=card.image_path) }}" 
+                                     alt="Flashcard image"
+                                     data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
         {% endfor %}
     </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
+    
+    <div class="actions">
+        <a href="{{ url_for('add_card_form') }}?topic={{ topic.name }}" class="add-btn">Add New Flashcard</a>
+    </div>
 {% endblock %}

@@ -1,6 +1,25 @@
 {% extends "base.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <a href="{{ url_for('topic', topic_id=flashcard.topic_id) }}">{{ flashcard.topic.name }}</a>
+    <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+    <span class="current">Edit Flashcard</span>
+</div>
+{% endblock %}
+
 {% block content %}
-    <h1>Edit Flashcard</h1>
+    <div class="page-header-with-actions">
+        <h1>Edit Flashcard</h1>
+        <div class="header-actions">
+            <form method="POST" action="{{ url_for('delete_card', card_id=flashcard.id) }}" class="delete-form" onsubmit="return confirm('Are you sure you want to delete this flashcard? This action cannot be undone.');">
+                <button type="submit" class="btn-danger delete-btn"><i class="fas fa-trash-alt"></i> Delete</button>
+            </form>
+        </div>
+    </div>
+    
     <div class="container">
         {% with messages = get_flashed_messages() %}
           {% if messages %}
