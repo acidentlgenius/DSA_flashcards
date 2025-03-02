@@ -10,6 +10,7 @@ from flask_session import Session  # Add this import
 import functools
 from utils.session_utils import clear_invalid_sessions
 from utils.db_utils import handle_db_errors, test_connection
+from utils.oauth_utils import login_required_with_refresh  # Import the new utility
 import urllib.parse
 
 app = Flask(__name__)
@@ -61,7 +62,10 @@ blueprint = make_google_blueprint(
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile"
     ],
-    redirect_to="authorized_callback"  # This is key - redirect to our handler after OAuth
+    redirect_to="authorized_callback",  # This is key - redirect to our handler after OAuth
+    # Add offline access to get refresh token
+    offline=True,
+    reprompt_consent=True
 )
 app.register_blueprint(blueprint, url_prefix="/login")
 
@@ -118,14 +122,7 @@ def delete_file(file_path):
         return False
 
 # Login required decorator
-def login_required(f):
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not google.authorized:
-            logger.debug("User not authorized, redirecting to login")
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+login_required = login_required_with_refresh(blueprint=google)
 
 # Homepage route
 @app.route('/')
@@ -154,6 +151,9 @@ def authorized_callback():
     resp = google.get("/oauth2/v2/userinfo")
     if resp.ok:
         user_info = resp.json()
+        # Extract user's name for greeting
+        user_name = user_info.get('name') or user_info.get('given_name', 'User')
+        flash(f"Welcome, {user_name}! You've successfully logged in.", "success")
         # Store in db if needed...
         return redirect(url_for('dashboard'))
     else:
@@ -168,9 +168,13 @@ def dashboard():
     logger.debug(f"Dashboard route - authorized: {google.authorized}")
     topics = Topic.query.all()
     
-    # Get user info
-    resp = google.get("/oauth2/v2/userinfo")
-    user_info = resp.json() if resp.ok else None
+    try:
+        # Get user info
+        resp = google.get("/oauth2/v2/userinfo")
+        user_info = resp.json() if resp.ok else None
+    except Exception as e:
+        logger.error(f"Error getting user info: {str(e)}")
+        user_info = None
     
     return render_template('index.html', topics=topics, user_info=user_info)
 
