@@ -20,30 +20,28 @@
         {% for card in cards %}
         <div class="flip-card">
             <div class="flip-card-inner">
-                <a href="{{ url_for('edit_card', card_id=card.id) }}" class="edit-btn">
-                </a>
                 <div class="flip-card-front">
+                    <span class="difficulty-badge {{ card.difficulty.lower() }}"></span>
+                    <a href="{{ url_for('edit_card', card_id=card.id) }}" class="edit-btn" title="Edit Flashcard"></a>
                     <h3>{{ card.problem_name }}</h3>
-                    <p>{{ card.description[:200] }}{% if card.description|length > 200 %}...{% endif %}</p>
-                    <div class="difficulty-badge {{ card.difficulty.lower() }}">
-                        {{ card.difficulty }}
-                    </div>
+                    <p>{{ card.description[:200]|safe }}{% if card.description|length > 200 %}...{% endif %}</p>
                     <p><small>Topic: {{ card.topic.name }}</small></p>
                 </div>
                 <div class="flip-card-back">
-                    <h4>Approach:</h4>
-                    <p>{{ card.approach }}</p>
+                    <h3>Solution Approach</h3>
+                    <p>{{ card.approach|safe }}</p>
                     {% if card.notes %}
-                    <h4>Notes:</h4>
-                    <p>{{ card.notes }}</p>
+                        <h4>Notes</h4>
+                        <p>{{ card.notes|safe }}</p>
                     {% endif %}
+                    
                     {% if card.image_path %}
-                    <div class="flip-card-image-container">
-                        <img src="{{ url_for('static', filename=card.image_path) }}" 
-                             alt="Card image" 
-                             class="flip-card-image clickable-image"
-                             data-full-img="{{ url_for('static', filename=card.image_path) }}">
-                    </div>
+                        <div class="flip-card-image-container">
+                            <img class="flip-card-image clickable-image" 
+                                 src="{{ url_for('static', filename=card.image_path) }}" 
+                                 alt="Flashcard image"
+                                 data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -54,5 +52,4 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
 {% endblock %}
