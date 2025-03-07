@@ -33,12 +33,22 @@
                             <p>{{ card.notes|safe }}</p>
                         {% endif %}
                         
+                        <!-- Only show image if path exists -->
                         {% if card.image_path %}
                             <div class="flip-card-image-container">
-                                <img class="flip-card-image clickable-image" 
-                                     src="{{ url_for('static', filename=card.image_path) }}" 
-                                     alt="Flashcard image"
-                                     data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                                {% if card.image_path.startswith('http') %}
+                                    <!-- Cloudinary or other remote image -->
+                                    <img class="flip-card-image clickable-image" 
+                                         src="{{ card.image_path }}" 
+                                         alt="Flashcard image"
+                                         data-full-img="{{ card.image_path }}">
+                                {% else %}
+                                    <!-- Local image -->
+                                    <img class="flip-card-image clickable-image" 
+                                         src="{{ url_for('static', filename=card.image_path) }}" 
+                                         alt="Flashcard image"
+                                         data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>

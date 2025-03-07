@@ -12,6 +12,7 @@ from utils.session_utils import clear_invalid_sessions
 from utils.db_utils import handle_db_errors, test_connection
 from utils.oauth_utils import login_required_with_refresh  # Import the new utility
 import urllib.parse
+from utils.cloudinary_utils import configure_cloudinary, upload_to_cloudinary, delete_from_cloudinary
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -89,6 +90,9 @@ def init_app():
 
 # Run initialization function
 init_app()
+
+# Configure Cloudinary on app startup
+configure_cloudinary()
 
 # Add before_request handler to ensure database connection is valid
 @app.before_request
@@ -227,15 +231,18 @@ def add_card():
     notes = request.form.get('notes', '')  # Capture custom notes
 
     # Handle image upload
+    uploaded_image = request.files['image']
     image_path = None
-    if 'image' in request.files:
-        file = request.files['image']
-        if file and file.filename != '' and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
-            image_path = f'uploads/{filename}'
-            logger.info(f"Saved new image at {file_path}")
+    cloudinary_public_id = None
+    
+    if uploaded_image and uploaded_image.filename:
+        # Upload to Cloudinary
+        cloudinary_data = upload_to_cloudinary(uploaded_image)
+        
+        if cloudinary_data:
+            # Store the Cloudinary public_id and URL in the database
+            image_path = cloudinary_data['url']
+            cloudinary_public_id = cloudinary_data['public_id']
 
     # Handle topic (create if new)
     topic = Topic.query.filter_by(name=topic_name).first()
@@ -252,7 +259,8 @@ def add_card():
         approach=approach,
         difficulty=difficulty,
         notes=notes,
-        image_path=image_path
+        image_path=image_path,
+        cloudinary_public_id=cloudinary_public_id
     )
     db.session.add(new_card)
     db.session.commit()
@@ -300,48 +308,55 @@ def edit_card(card_id):
         flashcard.notes = request.form.get('notes', '')
 
         old_image_path = flashcard.image_path
+        old_cloudinary_id = flashcard.cloudinary_public_id
         
         # Handle image deletion
         if request.form.get('remove_image') == 'true' and old_image_path:
-            # Delete the physical file if it exists
-            logger.debug(f"Removing image: {old_image_path}")
-            
-            # Convert the database path to the full file system path
-            if not old_image_path.startswith('static/'):
-                full_path = os.path.join('static', old_image_path)
-            else:
-                full_path = old_image_path
-                
-            logger.debug(f"Full file path: {full_path}")
-            
-            if delete_file(full_path):
+            if old_cloudinary_id:
+                # Delete from Cloudinary
+                delete_from_cloudinary(old_cloudinary_id)
+                flashcard.cloudinary_public_id = None
+                flashcard.image_path = None
                 flash('Image successfully deleted', 'success')
-            else:
-                flash('Image could not be deleted from the server', 'warning')
+            elif not old_image_path.startswith('http'):
+                # Delete local file
+                if not old_image_path.startswith('static/'):
+                    full_path = os.path.join('static', old_image_path)
+                else:
+                    full_path = old_image_path
+                    
+                if delete_file(full_path):
+                    flash('Image successfully deleted', 'success')
+                else:
+                    flash('Image could not be deleted from the server', 'warning')
                 
-            # Set the database field to None regardless
-            flashcard.image_path = None
+                # Set the database field to None
+                flashcard.image_path = None
             
         # Handle new image upload (only if no removal requested)
         elif 'image' in request.files:
             file = request.files['image']
             if file.filename != '':
                 if file and allowed_file(file.filename):
-                    # If there was a previous image, delete it
-                    if old_image_path:
+                    # If there was a previous Cloudinary image, delete it
+                    if old_cloudinary_id:
+                        delete_from_cloudinary(old_cloudinary_id)
+                    # If there was a previous local image, delete it
+                    elif old_image_path and not old_image_path.startswith('http'):
                         if not old_image_path.startswith('static/'):
                             full_path = os.path.join('static', old_image_path)
                         else:
                             full_path = old_image_path
-                        
                         delete_file(full_path)
                     
-                    # Save the new image
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-                    flashcard.image_path = f'uploads/{filename}'
-                    logger.info(f"Saved new image at {file_path}")
+                    # Upload to Cloudinary
+                    cloudinary_data = upload_to_cloudinary(file)
+                    if cloudinary_data:
+                        flashcard.cloudinary_public_id = cloudinary_data['public_id']
+                        flashcard.image_path = cloudinary_data['url']
+                        flash('Image successfully uploaded to Cloudinary', 'success')
+                    else:
+                        flash('Failed to upload image to Cloudinary', 'error')
                 else:
                     flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'error')
                     return redirect(url_for('edit_card', card_id=card_id))
@@ -363,12 +378,17 @@ def delete_card(card_id):
     
     # Delete associated image if it exists
     if flashcard.image_path:
-        if not flashcard.image_path.startswith('static/'):
-            full_path = os.path.join('static', flashcard.image_path)
-        else:
-            full_path = flashcard.image_path
-        
-        delete_file(full_path)
+        if flashcard.cloudinary_public_id:
+            # Delete from Cloudinary
+            delete_from_cloudinary(flashcard.cloudinary_public_id)
+        elif not flashcard.image_path.startswith('http'):
+            # Delete local file if it's not a remote URL
+            if not flashcard.image_path.startswith('static/'):
+                full_path = os.path.join('static', flashcard.image_path)
+            else:
+                full_path = flashcard.image_path
+            
+            delete_file(full_path)
     
     # Delete the flashcard from database
     db.session.delete(flashcard)
@@ -415,6 +435,6 @@ if __name__ == '__main__':
         logger.info(f"Running in production mode on port {port}")
         app.run(host='0.0.0.0', port=port, debug=False)
     else:
-        # In development
-        logger.info(f"Running in development mode on port {port}")
-        app.run(host='0.0.0.0', port=port, debug=debug_mode)
+        # In development, explicitly enable the reloader
+        logger.info(f"Running in development mode on port {port} with auto-reloader {'enabled' if debug_mode else 'disabled'}")
+        app.run(host='0.0.0.0', port=port, debug=debug_mode, use_reloader=True)
