@@ -8,7 +8,7 @@ from config import Config
 from extensions import db  # Import db from extensions.py
 from flask_session import Session  # Add this import
 import functools
-from utils.session_utils import clear_invalid_sessions
+from utils.session_utils import clear_expired_db_sessions
 from utils.db_utils import handle_db_errors, test_connection
 from utils.oauth_utils import login_required_with_refresh  # Import the new utility
 import urllib.parse
@@ -17,23 +17,28 @@ from utils.cloudinary_utils import configure_cloudinary, upload_to_cloudinary, d
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Configure server-side session
-app.config['SESSION_TYPE'] = 'filesystem'
+# Configure server-side session with SQLAlchemy
+app.config['SESSION_TYPE'] = 'sqlalchemy'
+app.config['SESSION_SQLALCHEMY_TABLE'] = 'session'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_FILE_DIR'] = os.path.join(os.getcwd(), 'flask_session')
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'  # True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_FILE_DIR'] = 'flask_sessions'  # Configure your session directory
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Session lifetime in seconds
 
 if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
-# Initialize session
-Session(app)
 
 # Configure PostgreSQL (replace username, password, and host as needed)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize the app with the SQLAlchemy instance first
+db.init_app(app)
+# Set the SQLAlchemy instance for Flask-Session
+app.config['SESSION_SQLALCHEMY'] = db
+# Now initialize session after SQLAlchemy
+Session(app)
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -69,9 +74,6 @@ blueprint = make_google_blueprint(
     reprompt_consent=True
 )
 app.register_blueprint(blueprint, url_prefix="/login")
-
-# Initialize the app with the SQLAlchemy instance
-db.init_app(app)
 
 # Import models after db is initialized with app
 from models import User, Topic, Flashcard
@@ -310,14 +312,32 @@ def edit_card(card_id):
         old_image_path = flashcard.image_path
         old_cloudinary_id = flashcard.cloudinary_public_id
         
-        # Handle image deletion
+        # Log the form data for debugging
+        logger.debug(f"Form data - remove_image: {request.form.get('remove_image')}")
+        logger.debug(f"Old image path: {old_image_path}")
+        logger.debug(f"Old Cloudinary ID: {old_cloudinary_id}")
+        
+        # Handle image deletion - Fix the condition check
         if request.form.get('remove_image') == 'true' and old_image_path:
+            logger.info(f"Deleting image for flashcard {card_id}")
+            
+            # Handle Cloudinary image deletion
             if old_cloudinary_id:
-                # Delete from Cloudinary
-                delete_from_cloudinary(old_cloudinary_id)
+                logger.info(f"Deleting Cloudinary image with ID: {old_cloudinary_id}")
+                deletion_successful = delete_from_cloudinary(old_cloudinary_id)
+                
+                if deletion_successful:
+                    logger.info("Cloudinary deletion successful")
+                    flash('Image successfully deleted from Cloudinary', 'success')
+                else:
+                    logger.warning("Cloudinary deletion failed or returned unexpected result")
+                    flash('There was an issue deleting the image from Cloudinary', 'warning')
+                
+                # Always update database regardless of Cloudinary API response
                 flashcard.cloudinary_public_id = None
                 flashcard.image_path = None
-                flash('Image successfully deleted', 'success')
+            
+            # Handle local file deletion
             elif not old_image_path.startswith('http'):
                 # Delete local file
                 if not old_image_path.startswith('static/'):
@@ -333,6 +353,21 @@ def edit_card(card_id):
                 # Set the database field to None
                 flashcard.image_path = None
             
+            # Handle other remote URLs (non-Cloudinary)
+            else:
+                logger.info(f"Removing remote image URL from database: {old_image_path}")
+                flashcard.image_path = None
+                flash('Image reference removed', 'success')
+            
+            # Commit changes immediately after image deletion
+            try:
+                db.session.commit()
+                logger.info("Database updated after image deletion")
+            except Exception as e:
+                logger.error(f"Failed to update database after image deletion: {str(e)}")
+                db.session.rollback()
+                flash('Failed to update database after image deletion', 'error')
+                
         # Handle new image upload (only if no removal requested)
         elif 'image' in request.files:
             file = request.files['image']
@@ -361,7 +396,16 @@ def edit_card(card_id):
                     flash('Invalid file type. Only PNG, JPG, JPEG, and GIF are allowed.', 'error')
                     return redirect(url_for('edit_card', card_id=card_id))
 
-        db.session.commit()
+        # Final commit for all changes
+        try:
+            db.session.commit()
+            logger.info(f"Successfully updated flashcard {card_id}")
+        except Exception as e:
+            logger.error(f"Error updating flashcard: {str(e)}")
+            db.session.rollback()
+            flash('An error occurred while updating the flashcard', 'error')
+            return redirect(url_for('edit_card', card_id=card_id))
+
         return redirect(url_for('topic', topic_id=topic.id) + '?updated=true')
 
     # Render the edit form for GET request
@@ -423,7 +467,7 @@ def cleanup_sessions():
     # only run it occasionally to reduce overhead
     import random
     if random.random() < 0.05:  # ~5% chance to run on any request
-        clear_invalid_sessions(app)
+        clear_expired_db_sessions(app)
 
 if __name__ == '__main__':
     # Use environment variable to control debug mode

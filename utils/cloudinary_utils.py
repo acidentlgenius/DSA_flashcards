@@ -1,9 +1,13 @@
 import os
+import logging
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 from werkzeug.utils import secure_filename
 import uuid
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Configure Cloudinary
 def configure_cloudinary():
@@ -40,9 +44,22 @@ def upload_to_cloudinary(file):
 def delete_from_cloudinary(public_id):
     """Delete an image from Cloudinary by public ID"""
     if not public_id:
-        return None
+        logger.warning("No public_id provided for Cloudinary deletion")
+        return False
     
-    return cloudinary.uploader.destroy(public_id)
+    try:
+        logger.info(f"Attempting to delete image from Cloudinary: {public_id}")
+        result = cloudinary.uploader.destroy(public_id)
+        
+        if result and result.get('result') == 'ok':
+            logger.info(f"Successfully deleted image from Cloudinary: {public_id}")
+            return True
+        else:
+            logger.error(f"Failed to delete image from Cloudinary: {public_id}. Result: {result}")
+            return False
+    except Exception as e:
+        logger.exception(f"Error deleting image from Cloudinary: {str(e)}")
+        return False
     
 def get_cloudinary_url(public_id, **options):
     """Get a Cloudinary URL with optional transformations"""

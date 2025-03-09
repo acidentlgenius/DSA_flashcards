@@ -30,9 +30,9 @@ class Flashcard(db.Model):
     image_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     modified_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Add new field for Cloudinary public_id
     cloudinary_public_id = db.Column(db.String(255))
     
     def __repr__(self):
         return f"Flashcard('{self.problem_name}', '{self.difficulty}')"
+
+# The Session class has been removed to avoid conflict with Flask-Session's table

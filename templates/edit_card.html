@@ -129,16 +129,28 @@
         const removeCheckbox = document.getElementById('remove_image');
         
         if (removeCheckbox && imageInput) {
+            // Log the initial state for debugging
+            console.log("Initial state - Remove checkbox:", removeCheckbox.checked);
+            
             imageInput.addEventListener('change', function() {
                 if (this.files.length > 0) {
+                    console.log("New file selected, unchecking remove checkbox");
                     removeCheckbox.checked = false;
                 }
             });
             
             removeCheckbox.addEventListener('change', function() {
-                if (this.checked && imageInput.value) {
+                console.log("Remove checkbox changed to:", this.checked);
+                if (this.checked) {
+                    // Always clear the file input when removal is checked
                     imageInput.value = '';
                 }
+            });
+            
+            // Ensure the checkbox keeps its state when the form is submitted
+            const form = removeCheckbox.closest('form');
+            form.addEventListener('submit', function() {
+                console.log("Form submitting. Remove checkbox state:", removeCheckbox.checked);
             });
         }
     });

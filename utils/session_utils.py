@@ -1,14 +1,10 @@
-import os
-import time
 from flask import current_app
-import glob
+from datetime import datetime
+from sqlalchemy import text
 
-def clear_invalid_sessions(app=None):
+def clear_expired_db_sessions(app=None):
     """
-    Clear invalid session files from flask_sessions directory.
-    
-    This function removes session files that are expired based on
-    their modification time and the session lifetime configuration.
+    Clear expired session records from the database.
     
     Args:
         app: Flask application instance (optional, uses current_app if not provided)
@@ -16,29 +12,16 @@ def clear_invalid_sessions(app=None):
     if app is None:
         app = current_app
         
-    # Get session configuration
-    session_lifetime = app.config.get('PERMANENT_SESSION_LIFETIME', 3600)  # Default 1 hour
-    session_dir = app.config.get('SESSION_FILE_DIR', 'flask_sessions')
-    
-    # Ensure the directory exists
-    if not os.path.exists(session_dir):
-        return
-    
-    # Get current time
-    current_time = time.time()
-    
-    # Find all session files
-    session_files = glob.glob(os.path.join(session_dir, 'session:*'))
-    
-    # Check each session file
-    for session_file in session_files:
-        try:
-            # Get the file's modification time
-            mtime = os.path.getmtime(session_file)
-            
-            # Check if the file is expired
-            if current_time - mtime > session_lifetime:
-                os.remove(session_file)
-                app.logger.debug(f"Removed expired session file: {session_file}")
-        except (OSError, IOError) as e:
-            app.logger.error(f"Error processing session file {session_file}: {str(e)}")
+    try:
+        from extensions import db
+        
+        # Delete expired sessions directly using SQL since we no longer have a Session model
+        # The session table is created by Flask-Session with a specific structure
+        result = db.session.execute(text("DELETE FROM session WHERE expiry < :now"), {"now": datetime.utcnow()})
+        db.session.commit()
+        
+        # Get count of deleted rows if available
+        expired_count = result.rowcount if hasattr(result, 'rowcount') else 'unknown number of'
+        app.logger.debug(f"Removed {expired_count} expired session records from database")
+    except Exception as e:
+        app.logger.error(f"Error removing expired sessions: {str(e)}")
