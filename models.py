@@ -8,12 +8,18 @@ class User(db.Model):
     name = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Change the relationship to include all flashcards by this user
+    flashcards = db.relationship('Flashcard', backref='user', lazy=True)
+    
     def __repr__(self):
         return f"User('{self.email}')"
 
 class Topic(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False, unique=True)  # Name must be unique globally
+    # Remove user_id field since all topics are global
+    is_global = db.Column(db.Boolean, default=True)  # All topics are global by default
+    
     flashcards = db.relationship('Flashcard', backref='topic', lazy=True)
     
     def __repr__(self):
@@ -22,6 +28,8 @@ class Topic(db.Model):
 class Flashcard(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    # Add user_id field
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     problem_name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
     approach = db.Column(db.Text, nullable=False)

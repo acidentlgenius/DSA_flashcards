@@ -130,12 +130,57 @@ def delete_file(file_path):
 # Login required decorator
 login_required = login_required_with_refresh(blueprint=google)
 
+# Helper function to get current user or create if they don't exist
+def get_or_create_user():
+    if not google.authorized:
+        return None
+        
+    # Get user info from Google
+    resp = google.get("/oauth2/v2/userinfo")
+    if not resp.ok:
+        logger.error("Failed to get user info from Google")
+        return None
+        
+    user_info = resp.json()
+    google_id = user_info.get('id')
+    email = user_info.get('email')
+    name = user_info.get('name') or user_info.get('given_name', 'User')
+    
+    # Look for user in database
+    user = User.query.filter_by(google_id=google_id).first()
+    
+    if not user:
+        # Create new user
+        user = User(google_id=google_id, email=email, name=name)
+        db.session.add(user)
+        db.session.commit()
+        logger.info(f"Created new user: {email}")
+    
+    # Store user ID in session for quick access
+    session['user_id'] = user.id
+    return user
+
+# Helper function to get all topics (global)
+def get_all_topics():
+    try:
+        # Get all topics sorted by name
+        return Topic.query.order_by(Topic.name).all()
+    except Exception as e:
+        logger.warning(f"Error fetching topics: {str(e)}")
+        return []
+
 # Homepage route
 @app.route('/')
 def index():
     if google.authorized:
-        logger.debug("Home page: User is authorized, redirecting to dashboard")
-        return redirect(url_for('dashboard'))
+        # Get or create user in database
+        user = get_or_create_user()
+        if user:
+            logger.debug(f"Home page: User {user.email} is authorized, redirecting to dashboard")
+            return redirect(url_for('dashboard'))
+        else:
+            logger.error("Failed to identify authorized user")
+            return redirect(url_for('logout'))
     logger.debug("Home page: User not authorized, showing login page")
     return render_template('login.html')
 
@@ -153,36 +198,98 @@ def authorized_callback():
         flash("Authentication failed.", "error")
         return redirect(url_for('index'))
     
-    # Get user info from Google
-    resp = google.get("/oauth2/v2/userinfo")
-    if resp.ok:
-        user_info = resp.json()
-        # Extract user's name for greeting
-        user_name = user_info.get('name') or user_info.get('given_name', 'User')
-        flash(f"Welcome, {user_name}! You've successfully logged in.", "success")
-        # Store in db if needed...
+    # Get or create user
+    user = get_or_create_user()
+    if user:
+        flash(f"Welcome, {user.name}! You've successfully logged in.", "success")
         return redirect(url_for('dashboard'))
     else:
         flash("Failed to fetch user info.", "error")
         return redirect(url_for('index'))
 
-# Dashboard page with error handling
+# Helper function to safely get topics for a user
+def get_user_topics(user_id):
+    try:
+        return Topic.query.filter_by(user_id=user_id).all()
+    except Exception as e:
+        # Handle the case where user_id column doesn't exist yet
+        if 'user_id does not exist' in str(e):
+            logger.warning("user_id column does not exist in Topic table. Run migration scripts first.")
+            return []
+        else:
+            raise
+
+# Dashboard page - update to show all topics
 @app.route('/dashboard')
 @login_required
-@handle_db_errors  # Add error handling decorator
+@handle_db_errors
 def dashboard():
     logger.debug(f"Dashboard route - authorized: {google.authorized}")
-    topics = Topic.query.all()
+    
+    # Get current user
+    user_id = session.get('user_id')
+    if not user_id:
+        user = get_or_create_user()
+        if not user:
+            flash("Please log in again.", "error")
+            return redirect(url_for('logout'))
+        user_id = user.id
     
     try:
-        # Get user info
+        # Get all topics (global)
+        topics = get_all_topics()
+        logger.debug(f"Found {len(topics)} topics")
+        
+        # Count the user's flashcards for each topic
+        topic_stats = {}
+        for topic in topics:
+            try:
+                # Count user's cards for this topic
+                cards = Flashcard.query.filter_by(topic_id=topic.id, user_id=user_id).all()
+                
+                # Count by difficulty
+                difficulties = {'Easy': 0, 'Medium': 0, 'Hard': 0}
+                for card in cards:
+                    if card.difficulty in difficulties:
+                        difficulties[card.difficulty] += 1
+                
+                # Store stats for this topic
+                topic_stats[topic.id] = {
+                    'total': len(cards),
+                    'difficulties': difficulties
+                }
+            except Exception as inner_e:
+                logger.error(f"Error counting flashcards for topic {topic.id}: {str(inner_e)}")
+                # Provide default values if there's an error
+                topic_stats[topic.id] = {
+                    'total': 0,
+                    'difficulties': {'Easy': 0, 'Medium': 0, 'Hard': 0}
+                }
+        
+        logger.debug(f"Generated stats for {len(topic_stats)} topics")
+        
+        # Get user info for display
         resp = google.get("/oauth2/v2/userinfo")
         user_info = resp.json() if resp.ok else None
+        
+        return render_template('index.html', topics=topics, user_info=user_info, topic_stats=topic_stats)
+        
     except Exception as e:
-        logger.error(f"Error getting user info: {str(e)}")
-        user_info = None
-    
-    return render_template('index.html', topics=topics, user_info=user_info)
+        logger.error(f"Error in dashboard: {str(e)}")
+        # Create empty stats if there was an exception
+        empty_stats = {}
+        if 'topics' in locals():
+            for topic in topics:
+                empty_stats[topic.id] = {
+                    'total': 0, 
+                    'difficulties': {'Easy': 0, 'Medium': 0, 'Hard': 0}
+                }
+        
+        flash("There was an issue loading your dashboard.", "error")
+        return render_template('index.html', 
+                              topics=[] if 'topics' not in locals() else topics, 
+                              user_info=None, 
+                              topic_stats=empty_stats)
 
 # Logout route
 @app.route('/logout')
@@ -203,21 +310,37 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for('index'))
 
-# Topic route: Show flashcards for a topic with error handling
+# Topic route: Update to show all topics but only user's flashcards
 @app.route('/topic/<int:topic_id>')
 @login_required
 @handle_db_errors  # Add error handling decorator
 def topic(topic_id):
+    # Get current user_id
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+    
+    # Get topic (any topic is accessible)
     topic = Topic.query.get_or_404(topic_id)
-    cards = Flashcard.query.filter_by(topic_id=topic_id).all()
+    
+    # Get only user's cards for this topic
+    cards = Flashcard.query.filter_by(topic_id=topic_id, user_id=user_id).all()
+    
     added = request.args.get('added', False)
     return render_template('topic.html', topic=topic, cards=cards, added=added)
 
-# Add card form
+# Add card form - update to show all topics
 @app.route('/add_card_form')
 @login_required
 def add_card_form():
-    topics = Topic.query.all()
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+    
+    # Get all topics
+    topics = get_all_topics()
     return render_template('add_card.html', topics=topics)
 
 # Add new card with error handling
@@ -225,6 +348,11 @@ def add_card_form():
 @login_required
 @handle_db_errors  # Add error handling decorator
 def add_card():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+        
     topic_name = request.form['topic']
     problem_name = request.form['problem_name']
     description = request.form['description']
@@ -246,16 +374,17 @@ def add_card():
             image_path = cloudinary_data['url']
             cloudinary_public_id = cloudinary_data['public_id']
 
-    # Handle topic (create if new)
+    # Handle topic (create if new - global topic)
     topic = Topic.query.filter_by(name=topic_name).first()
     if not topic:
-        topic = Topic(name=topic_name)
+        topic = Topic(name=topic_name, is_global=True)
         db.session.add(topic)
         db.session.commit()
 
     # Create and save the new flashcard
     new_card = Flashcard(
         topic_id=topic.id,
+        user_id=user_id,  # Associate with current user
         problem_name=problem_name,
         description=description,
         approach=approach,
@@ -280,9 +409,16 @@ def uploaded_file(filename):
 @login_required
 @handle_db_errors  # Add error handling decorator
 def edit_card(card_id):
-    # Fetch the flashcard or return 404 if it doesn't exist
-    flashcard = Flashcard.query.get_or_404(card_id)
-    topics = Topic.query.all()
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+        
+    # Fetch the flashcard ensuring it belongs to current user
+    flashcard = Flashcard.query.filter_by(id=card_id, user_id=user_id).first_or_404()
+    
+    # Get all topics
+    topics = get_all_topics()
 
     if request.method == 'POST':
         # Handle topic selection or creation
@@ -291,9 +427,10 @@ def edit_card(card_id):
             new_topic_name = request.form.get('new_topic_name')
             if not new_topic_name:
                 return "Please provide a new topic name", 400
+                
             topic = Topic.query.filter_by(name=new_topic_name).first()
             if not topic:
-                topic = Topic(name=new_topic_name)
+                topic = Topic(name=new_topic_name, is_global=True)
                 db.session.add(topic)
                 db.session.commit()
         else:
@@ -416,8 +553,13 @@ def edit_card(card_id):
 @login_required
 @handle_db_errors  # Add error handling decorator
 def delete_card(card_id):
-    # Fetch the flashcard or return 404 if it doesn't exist
-    flashcard = Flashcard.query.get_or_404(card_id)
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+        
+    # Fetch the flashcard ensuring it belongs to current user
+    flashcard = Flashcard.query.filter_by(id=card_id, user_id=user_id).first_or_404()
     topic_id = flashcard.topic_id  # Store before deletion
     
     # Delete associated image if it exists
@@ -446,15 +588,23 @@ def delete_card(card_id):
 @login_required
 @handle_db_errors  # Add error handling decorator
 def search():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash("Please log in again.", "error")
+        return redirect(url_for('logout'))
+        
     query = request.args.get('q', '')
     if query:
-        # Search across multiple fields using ilike for case-insensitive search
+        # Search across multiple fields but only for this user's flashcards
         cards = Flashcard.query.filter(
-            db.or_(
-                Flashcard.problem_name.ilike(f'%{query}%'),
-                Flashcard.description.ilike(f'%{query}%'),
-                Flashcard.approach.ilike(f'%{query}%'),
-                Flashcard.notes.ilike(f'%{query}%')
+            db.and_(
+                Flashcard.user_id == user_id,
+                db.or_(
+                    Flashcard.problem_name.ilike(f'%{query}%'),
+                    Flashcard.description.ilike(f'%{query}%'),
+                    Flashcard.approach.ilike(f'%{query}%'),
+                    Flashcard.notes.ilike(f'%{query}%')
+                )
             )
         ).all()
     else:
