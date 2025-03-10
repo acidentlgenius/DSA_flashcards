@@ -4,3 +4,4 @@ __pycache__/
 flashcards.session.sql
 .env
 flask_sessions/
+app.yaml
