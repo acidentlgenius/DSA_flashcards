@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,13 +10,110 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Apply theme early to prevent flash -->
+    <script>
+        // Immediately apply saved theme to prevent flash of default theme
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else if (prefersDarkScheme) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <style>
-        /* Add styling for the welcome message */
+        /* Apply transitions to all elements that change with theme */
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        :root {
+            /* Light theme variables */
+            --background-color: #f5f5f5;
+            --text-color: #333;
+            --card-bg: #fff;
+            --card-border: #e0e0e0;
+            --navbar-bg: #4CAF50;
+            --alert-bg: #d4edda;
+            --alert-border: #c3e6cb;
+            --alert-color: #155724;
+            --input-bg: #fff;
+            --input-text: #333;
+            --input-border: #ced4da;
+            --dropdown-bg: #fff;
+            --dropdown-text: #333;
+            --form-bg: #fff;
+            --modal-bg: rgba(0,0,0,0.85);
+            --modal-text: #f1f1f1;
+            --btn-default-bg: #4CAF50;
+            --btn-default-text: #fff;
+            --btn-danger-bg: #dc3545;
+            --btn-danger-text: #fff;
+        }
+        
+        [data-theme="dark"] {
+            /* Dark theme variables */
+            --background-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --card-border: #333;
+            --navbar-bg: #2e7d32;
+            --alert-bg: #264c2e;
+            --alert-border: #1b421f;
+            --alert-color: #8fd19e;
+            --input-bg: #2d2d2d;
+            --input-text: #e0e0e0;
+            --input-border: #444;
+            --dropdown-bg: #2d2d2d;
+            --dropdown-text: #e0e0e0;
+            --form-bg: #1e1e1e;
+            --modal-bg: rgba(0,0,0,0.95);
+            --modal-text: #e0e0e0;
+            --btn-default-bg: #2e7d32;
+            --btn-default-text: #fff;
+            --btn-danger-bg: #a52834;
+            --btn-danger-text: #fff;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        
+        .navbar {
+            background-color: var(--navbar-bg) !important;
+        }
+        
+        .flip-card-front, .flip-card-back {
+            background-color: var(--card-bg);
+            border-color: var(--card-border);
+            color: var(--text-color);
+        }
+        
+        .topic-card {
+            background-color: var(--card-bg);
+            border-color: var(--card-border);
+        }
+        
         .alert-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
+            background-color: var(--alert-bg);
+            border-color: var(--alert-border);
+            color: var(--alert-color);
             animation: fadeIn 0.5s;
+        }
+        
+        /* Theme switch styles */
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+        
+        .theme-switch i {
+            margin-right: 8px;
         }
         
         @keyframes fadeIn {
@@ -57,6 +154,52 @@
                 width: 100%;
             }
         }
+
+        /* Forms and inputs */
+        form {
+            background-color: var(--form-bg);
+        }
+        
+        input[type="text"],
+        input[type="search"],
+        select,
+        textarea {
+            background-color: var(--input-bg);
+            color: var(--input-text);
+            border-color: var(--input-border);
+        }
+        
+        .dropdown-menu {
+            background-color: var(--dropdown-bg);
+        }
+        
+        .dropdown-item {
+            color: var(--dropdown-text);
+        }
+        
+        .dropdown-item:hover {
+            background-color: rgba(128, 128, 128, 0.2);
+        }
+        
+        /* Modal */
+        .image-modal {
+            background-color: var(--modal-bg);
+        }
+        
+        .close-modal {
+            color: var(--modal-text);
+        }
+        
+        /* Buttons */
+        .submit-btn, .add-btn, .topic-view-btn {
+            background-color: var(--btn-default-bg);
+            color: var(--btn-default-text);
+        }
+        
+        .btn-danger, .delete-btn {
+            background-color: var(--btn-danger-bg);
+            color: var(--btn-danger-text);
+        }
     </style>
 </head>
 <body>
@@ -84,6 +227,12 @@
                             <i class="fas fa-user-circle"></i> Account
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <a class="dropdown-item theme-switch" href="#" id="themeSwitch">
+                                    <i class="fas fa-moon"></i> Dark Mode
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                         </ul>
                     </li>
@@ -128,6 +277,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/flashcards.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-modal.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme-switcher.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
