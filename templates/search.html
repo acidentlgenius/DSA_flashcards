@@ -35,21 +35,20 @@
                         <p>{{ card.notes|safe }}</p>
                     {% endif %}
                     
-                    <!-- Only show image if path exists -->
                     {% if card.image_path %}
                         <div class="flip-card-image-container">
                             {% if card.image_path.startswith('http') %}
-                                <!-- Cloudinary or other remote image -->
                                 <img class="flip-card-image clickable-image" 
                                     src="{{ card.image_path }}" 
                                     alt="Flashcard image"
-                                    data-full-img="{{ card.image_path }}">
+                                    data-full-img="{{ card.image_path }}"
+                                    loading="lazy">
                             {% else %}
-                                <!-- Local image -->
                                 <img class="flip-card-image clickable-image" 
                                     src="{{ url_for('static', filename=card.image_path) }}" 
                                     alt="Flashcard image"
-                                    data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                                    data-full-img="{{ url_for('static', filename=card.image_path) }}"
+                                    loading="lazy">
                             {% endif %}
                         </div>
                     {% endif %}
@@ -58,6 +57,37 @@
         </div>
         {% endfor %}
     </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="pagination-container">
+        <nav aria-label="Search result pages">
+            <ul class="pagination">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('search', q=query, page=pagination.prev_num) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
+                            <a class="page-link" href="{{ url_for('search', q=query, page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('search', q=query, page=pagination.next_num) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 {% endif %}
 {% endblock %}
 

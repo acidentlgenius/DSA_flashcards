@@ -1,18 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session, make_response
 import os
 from werkzeug.utils import secure_filename
 import logging
 from flask_dance.contrib.google import make_google_blueprint, google
 from flask_dance.consumer import oauth_authorized
 from config import Config
-from extensions import db  # Import db from extensions.py
-from flask_session import Session  # Add this import
+from extensions import db, cache  # Import cache from extensions
+from flask_session import Session
 import functools
 from utils.session_utils import clear_expired_db_sessions
 from utils.db_utils import handle_db_errors, test_connection
-from utils.oauth_utils import login_required_with_refresh  # Import the new utility
+from utils.oauth_utils import login_required_with_refresh
 import urllib.parse
 from utils.cloudinary_utils import configure_cloudinary, upload_to_cloudinary, delete_from_cloudinary
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,21 +23,28 @@ app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY_TABLE'] = 'session'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'  # True in production with HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600*24*7  # Session lifetime in seconds
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600*24*7
 
+# Improved Cache configuration
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 600  # 10 minutes default (increased from 5)
+app.config['CACHE_THRESHOLD'] = 1000  # Maximum number of items the cache will store
+
+# Initialize extensions
 if app.config['SQLALCHEMY_DATABASE_URI'] and app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
 
-# Configure PostgreSQL (replace username, password, and host as needed)
+# Configure PostgreSQL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize the app with the SQLAlchemy instance first
+# Initialize db and cache
 db.init_app(app)
+cache.init_app(app)
+
 # Set the SQLAlchemy instance for Flask-Session
 app.config['SESSION_SQLALCHEMY'] = db
-# Now initialize session after SQLAlchemy
 Session(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
@@ -77,6 +85,7 @@ app.register_blueprint(blueprint, url_prefix="/login")
 
 # Import models after db is initialized with app
 from models import User, Topic, Flashcard
+from sqlalchemy.orm import joinedload
 
 # Create upload directory and database tables during app initialization
 def init_app():
@@ -160,11 +169,14 @@ def get_or_create_user():
     session['user_id'] = user.id
     return user
 
-# Helper function to get all topics (global)
+# Helper function to get all topics (with caching)
+@cache.cached(timeout=60, key_prefix='all_topics')  # Reduce cache time for testing
 def get_all_topics():
     try:
         # Get all topics sorted by name
-        return Topic.query.order_by(Topic.name).all()
+        topics = Topic.query.order_by(Topic.name).all()
+        logger.debug(f"Retrieved {len(topics)} topics from database")
+        return topics
     except Exception as e:
         logger.warning(f"Error fetching topics: {str(e)}")
         return []
@@ -219,7 +231,7 @@ def get_user_topics(user_id):
         else:
             raise
 
-# Dashboard page - update to show all topics
+# Optimize dashboard with template fragment caching
 @app.route('/dashboard')
 @login_required
 @handle_db_errors
@@ -236,46 +248,92 @@ def dashboard():
         user_id = user.id
     
     try:
-        # Get all topics (global)
-        topics = get_all_topics()
-        logger.debug(f"Found {len(topics)} topics")
+        # Debug the current user ID
+        logger.debug(f"Dashboard: User ID = {user_id}")
         
-        # Count the user's flashcards for each topic
-        topic_stats = {}
-        for topic in topics:
-            try:
-                # Count user's cards for this topic
-                cards = Flashcard.query.filter_by(topic_id=topic.id, user_id=user_id).all()
+        # Use a cache key specific to this user's dashboard
+        cache_key = f'dashboard_data_{user_id}'
+        dashboard_data = cache.get(cache_key)
+        
+        if dashboard_data is None:
+            # Cache miss - generate the data
+            logger.debug("Dashboard cache miss - generating data")
+            
+            # Check for missing topics
+            topic_check = db.session.query(
+                db.distinct(Flashcard.topic_id)
+            ).filter_by(user_id=user_id).all()
+            topic_ids = [t[0] for t in topic_check]
+            
+            # Force recreate missing topics if any
+            if topic_ids:
+                missing_topics = []
+                for topic_id in topic_ids:
+                    topic = Topic.query.get(topic_id)
+                    if not topic:
+                        missing_topics.append(Topic(id=topic_id, name=f"Topic {topic_id}", is_global=True))
                 
-                # Count by difficulty
-                difficulties = {'Easy': 0, 'Medium': 0, 'Hard': 0}
-                for card in cards:
-                    if card.difficulty in difficulties:
-                        difficulties[card.difficulty] += 1
-                
-                # Store stats for this topic
-                topic_stats[topic.id] = {
-                    'total': len(cards),
-                    'difficulties': difficulties
-                }
-            except Exception as inner_e:
-                logger.error(f"Error counting flashcards for topic {topic.id}: {str(inner_e)}")
-                # Provide default values if there's an error
+                if missing_topics:
+                    db.session.add_all(missing_topics)
+                    db.session.commit()
+                    cache.delete('all_topics')
+            
+            # Always get fresh topics for dashboard
+            topics = Topic.query.order_by(Topic.name).all()
+            
+            # Initialize topic stats
+            topic_stats = {}
+            for topic in topics:
                 topic_stats[topic.id] = {
                     'total': 0,
                     'difficulties': {'Easy': 0, 'Medium': 0, 'Hard': 0}
                 }
+            
+            # Query that gets counts by topic_id and difficulty in one go
+            stats_query = db.session.query(
+                Flashcard.topic_id,
+                Flashcard.difficulty,
+                db.func.count(Flashcard.id).label('count')
+            ).filter_by(user_id=user_id).group_by(
+                Flashcard.topic_id,
+                Flashcard.difficulty
+            ).all()
+            
+            # Process the query results
+            for topic_id, difficulty, count in stats_query:
+                if topic_id in topic_stats:
+                    topic_stats[topic_id]['total'] += count
+                    if difficulty in topic_stats[topic_id]['difficulties']:
+                        topic_stats[topic_id]['difficulties'][difficulty] = count
+            
+            # Package data for caching
+            dashboard_data = {
+                'topics': topics,
+                'topic_stats': topic_stats,
+                'debug_info': {
+                    'user_id': user_id,
+                    'topic_count': len(topics),
+                    'topic_ids': [t.id for t in topics],
+                    'topic_names': [t.name for t in topics],
+                    'flashcard_topics': topic_ids
+                }
+            }
+            
+            # Cache the data for 5 minutes
+            cache.set(cache_key, dashboard_data, timeout=300)
         
-        logger.debug(f"Generated stats for {len(topic_stats)} topics")
+        # Get user info (which may be cached separately)
+        user_info = get_cached_user_info(user_id)
         
-        # Get user info for display
-        resp = google.get("/oauth2/v2/userinfo")
-        user_info = resp.json() if resp.ok else None
-        
-        return render_template('index.html', topics=topics, user_info=user_info, topic_stats=topic_stats)
+        # Render template with cached data
+        return render_template('index.html', 
+                              topics=dashboard_data['topics'], 
+                              user_info=user_info, 
+                              topic_stats=dashboard_data['topic_stats'], 
+                              debug_info=dashboard_data['debug_info'])
         
     except Exception as e:
-        logger.error(f"Error in dashboard: {str(e)}")
+        logger.error(f"Error in dashboard: {str(e)}", exc_info=True)
         # Create empty stats if there was an exception
         empty_stats = {}
         if 'topics' in locals():
@@ -290,6 +348,15 @@ def dashboard():
                               topics=[] if 'topics' not in locals() else topics, 
                               user_info=None, 
                               topic_stats=empty_stats)
+
+# Function to get and cache user info from Google
+@cache.memoize(timeout=900)  # Cache for 15 minutes
+def get_cached_user_info(user_id):
+    if not google.authorized:
+        return None
+    
+    resp = google.get("/oauth2/v2/userinfo")
+    return resp.json() if resp.ok else None
 
 # Logout route
 @app.route('/logout')
@@ -310,12 +377,11 @@ def logout():
     flash("You have been logged out.", "success")
     return redirect(url_for('index'))
 
-# Topic route: Update to show all topics but only user's flashcards
+# Optimize topic view
 @app.route('/topic/<int:topic_id>')
 @login_required
 @handle_db_errors  # Add error handling decorator
 def topic(topic_id):
-    # Get current user_id
     user_id = session.get('user_id')
     if not user_id:
         flash("Please log in again.", "error")
@@ -324,8 +390,13 @@ def topic(topic_id):
     # Get topic (any topic is accessible)
     topic = Topic.query.get_or_404(topic_id)
     
-    # Get only user's cards for this topic
-    cards = Flashcard.query.filter_by(topic_id=topic_id, user_id=user_id).all()
+    # Eager load related data to avoid N+1 queries
+    cards = Flashcard.query.filter_by(
+        topic_id=topic_id, 
+        user_id=user_id
+    ).options(
+        joinedload(Flashcard.topic)
+    ).all()
     
     added = request.args.get('added', False)
     return render_template('topic.html', topic=topic, cards=cards, added=added)
@@ -377,9 +448,12 @@ def add_card():
     # Handle topic (create if new - global topic)
     topic = Topic.query.filter_by(name=topic_name).first()
     if not topic:
+        logger.info(f"Creating new topic: {topic_name}")
         topic = Topic(name=topic_name, is_global=True)
         db.session.add(topic)
         db.session.commit()
+        # Make sure to invalidate the cache
+        invalidate_topic_cache()
 
     # Create and save the new flashcard
     new_card = Flashcard(
@@ -583,7 +657,7 @@ def delete_card(card_id):
     flash('Flashcard successfully deleted', 'success')
     return redirect(url_for('topic', topic_id=topic_id))
 
-# Search with error handling
+# Optimize search with pagination
 @app.route('/search')
 @login_required
 @handle_db_errors  # Add error handling decorator
@@ -594,9 +668,12 @@ def search():
         return redirect(url_for('logout'))
         
     query = request.args.get('q', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 20  # Number of results per page
+    
     if query:
-        # Search across multiple fields but only for this user's flashcards
-        cards = Flashcard.query.filter(
+        # Search with pagination and eager loading
+        cards_query = Flashcard.query.filter(
             db.and_(
                 Flashcard.user_id == user_id,
                 db.or_(
@@ -606,18 +683,81 @@ def search():
                     Flashcard.notes.ilike(f'%{query}%')
                 )
             )
-        ).all()
+        ).options(joinedload(Flashcard.topic))
+        
+        # Get paginated results
+        pagination = cards_query.paginate(page=page, per_page=per_page, error_out=False)
+        cards = pagination.items
     else:
         cards = []
-    return render_template('search.html', cards=cards, query=query)
+        pagination = None
+        
+    return render_template('search.html', cards=cards, query=query, pagination=pagination)
 
+# Scheduled task instead of random session cleanup
 @app.before_request
 def cleanup_sessions():
-    # This will run before each request, but you could add logic to
-    # only run it occasionally to reduce overhead
-    import random
-    if random.random() < 0.05:  # ~5% chance to run on any request
-        clear_expired_db_sessions(app)
+    # Only run cleanup once per day based on current date
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    last_cleanup = session.get('last_cleanup_date')
+    
+    if last_cleanup != current_date:
+        session['last_cleanup_date'] = current_date
+        # Only run on Sundays (when day of week is 6)
+        if datetime.now().weekday() == 6:
+            clear_expired_db_sessions(app)
+
+# Function to invalidate topic cache when topics change
+def invalidate_topic_cache():
+    try:
+        logger.debug("Invalidating topic cache")
+        cache.delete('all_topics')
+    except Exception as e:
+        logger.error(f"Error invalidating cache: {str(e)}")
+
+# Add Browser Caching Support
+@app.after_request
+def add_cache_headers(response):
+    # Don't cache API responses or HTML pages by default
+    if request.path.startswith('/static/'):
+        # Cache static files (CSS, JS, images) for 1 week
+        if any(request.path.endswith(ext) for ext in ['.css', '.js']):
+            response.cache_control.max_age = 604800  # 1 week in seconds
+            response.cache_control.public = True
+        elif any(request.path.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif']):
+            response.cache_control.max_age = 2592000  # 30 days in seconds
+            response.cache_control.public = True
+    elif request.method == 'GET' and not any(request.path.startswith(p) for p in ['/login', '/logout', '/add_card']):
+        # Add some caching for read-only pages to prevent constant reloads
+        response.cache_control.max_age = 60  # 1 minute
+        response.cache_control.private = True
+    return response
+
+# Add test route for cache verification
+@app.route('/test_cache')
+@login_required
+def test_cache():
+    """Test if cache is working properly"""
+    # Only available in development
+    if os.environ.get('FLASK_ENV') != 'production':
+        try:
+            # Try to set and get a value in the cache
+            cache.set('test_key', 'Cache is working!')
+            result = cache.get('test_key')
+            cache.delete('test_key')
+            
+            # Test caching a function result
+            @cache.cached(timeout=60, key_prefix='test_func')
+            def test_func():
+                return "Function caching works!"
+            
+            func_result = test_func()
+            cache.delete('test_func')
+            
+            return f"Cache status: {result} | Function cache: {func_result}"
+        except Exception as e:
+            return f"Cache error: {str(e)}"
+    return "This endpoint is only available in development mode", 403
 
 if __name__ == '__main__':
     # Use environment variable to control debug mode

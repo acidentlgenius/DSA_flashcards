@@ -41,13 +41,15 @@
                                     <img class="flip-card-image clickable-image" 
                                          src="{{ card.image_path }}" 
                                          alt="Flashcard image"
-                                         data-full-img="{{ card.image_path }}">
+                                         data-full-img="{{ card.image_path }}"
+                                         loading="lazy">
                                 {% else %}
                                     <!-- Local image -->
                                     <img class="flip-card-image clickable-image" 
                                          src="{{ url_for('static', filename=card.image_path) }}" 
                                          alt="Flashcard image"
-                                         data-full-img="{{ url_for('static', filename=card.image_path) }}">
+                                         data-full-img="{{ url_for('static', filename=card.image_path) }}"
+                                         loading="lazy">
                                 {% endif %}
                             </div>
                         {% endif %}

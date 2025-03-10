@@ -1,37 +1,26 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Flashcard script loaded, looking for flip cards...');
-    
-    // Add click event to all flashcards
+    // Gather all cards once rather than calling querySelectorAll each time
     const flipCards = document.querySelectorAll('.flip-card');
     
     if (flipCards.length === 0) {
-        console.warn('No flip-card elements found on the page!');
         return;
     }
     
-    console.log(`Found ${flipCards.length} flip cards, attaching click events...`);
-    
-    flipCards.forEach((card, index) => {
-        console.log(`Setting up card ${index + 1}`);
+    // Use event delegation to reduce the number of event listeners
+    document.addEventListener('click', function(e) {
+        // Find the closest flip-card parent
+        const card = e.target.closest('.flip-card');
         
-        card.addEventListener('click', function(e) {
-            // Prevent flipping when clicking the edit button
-            if (e.target.classList.contains('edit-btn') || 
-                e.target.closest('.edit-btn')) {
-                console.log('Edit button clicked, preventing flip');
-                return;
-            }
-            
-            // Prevent flipping when clicking on a clickable image
-            if (e.target.classList.contains('clickable-image')) {
-                console.log('Image clicked, preventing flip');
-                return;
-            }
-            
-            console.log(`Flipping card ${index + 1}`);
-            this.classList.toggle('flipped');
-        });
+        if (!card) return; // Not clicking on a card
+        
+        // Don't flip when clicking on certain elements
+        if (e.target.classList.contains('edit-btn') || 
+            e.target.closest('.edit-btn') ||
+            e.target.classList.contains('clickable-image')) {
+            return;
+        }
+        
+        // Toggle the flipped class
+        card.classList.toggle('flipped');
     });
-    
-    console.log('All flip card events successfully attached!');
 });

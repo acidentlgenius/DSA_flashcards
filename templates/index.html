@@ -14,6 +14,27 @@
 
 {% block content %}
     <h1>DSA Topics</h1>
+    
+    <!-- Debug information (only show in development) -->
+    {% if config.DEBUG %}
+    <div class="debug-info" style="margin-bottom: 20px; padding: 10px; border: 1px dashed #ccc; background-color: #f9f9f9;">
+        <p><strong>Debug:</strong> Found {{ topics|length }} topics</p>
+        {% if debug_info %}
+        <p><strong>User ID:</strong> {{ debug_info.user_id }}</p>
+        <p><strong>Topic count:</strong> {{ debug_info.topic_count }}</p>
+        <p><strong>Topic IDs:</strong> {{ debug_info.topic_ids }}</p>
+        <p><strong>Topic Names:</strong> {{ debug_info.topic_names }}</p>
+        <p><strong>Flashcard Topics:</strong> {{ debug_info.flashcard_topics }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    {% if not topics %}
+    <div class="alert alert-info">
+        <p>No topics found. Add your first flashcard to create a topic!</p>
+        <p><a href="{{ url_for('add_card_form') }}" class="add-btn">Add New Flashcard</a></p>
+    </div>
+    {% else %}
     <div class="topic-grid">
         {% for topic in topics %}
             <div class="topic-card">
@@ -24,6 +45,7 @@
                     <div class="topic-stats">
                         {% if topic_stats and topic.id in topic_stats %}
                             <p><i class="fas fa-clipboard-list"></i> {{ topic_stats[topic.id]['total'] }} flashcards</p>
+                            
                             {% if topic_stats[topic.id]['difficulties']['Easy'] > 0 %}
                                 <p><span style="color: #27ae60;"><i class="fas fa-circle"></i> Easy: {{ topic_stats[topic.id]['difficulties']['Easy'] }}</span></p>
                             {% endif %}
@@ -37,13 +59,14 @@
                             <p><i class="fas fa-clipboard-list"></i> 0 flashcards</p>
                         {% endif %}
                     </div>
-                    <a href="{{ url_for('topic', topic_id=topic.id) }}" class="topic-view-btn">
-                        <i class="fas fa-eye"></i> View Flashcards
-                    </a>
+                    <a href="{{ url_for('topic', topic_id=topic.id) }}" class="topic-view-btn">View Cards</a>
                 </div>
             </div>
-        {% else %}
-            <p>No topics available. <a href="{{ url_for('add_card_form') }}">Add your first flashcard</a> to create a topic.</p>
         {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="actions">
+        <a href="{{ url_for('add_card_form') }}" class="add-btn">Add New Flashcard</a>
     </div>
 {% endblock %}
