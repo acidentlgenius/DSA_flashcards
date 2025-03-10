@@ -23,20 +23,81 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Navbar customization */
+        .navbar-brand {
+            font-weight: bold;
+            color: white !important;
+        }
+        
+        .navbar {
+            padding: 0.5rem 1rem;
+        }
+        
+        .navbar-nav .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            color: white !important;
+        }
+        
+        /* Adjust search bar for navbar */
+        .navbar .search-bar {
+            margin-top: 0;
+        }
+        
+        .navbar .search-bar form {
+            margin: 0;
+        }
+        
+        @media (max-width: 992px) {
+            .navbar .search-bar {
+                margin: 0.5rem 0;
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <header>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #4CAF50;">
         <div class="container">
-            <h1>DSA Flashcards</h1>
-            <div class="search-bar">
-                <form action="{{ url_for('search') }}" method="get">
-                    <input type="search" name="q" placeholder="Search flashcards..." value="{{ request.args.get('q', '') }}">
-                    <button type="submit"><i class="fas fa-search"></i></button>
-                </form>
+            <a class="navbar-brand" href="{{ url_for('index') }}">DSA Flashcards</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <div class="search-bar mx-auto">
+                    <form action="{{ url_for('search') }}" method="get">
+                        <input type="search" name="q" placeholder="Search flashcards..." value="{{ request.args.get('q', '') }}">
+                        <button type="submit"><i class="fas fa-search"></i></button>
+                    </form>
+                </div>
+                
+                <!-- User Account Actions -->
+                {% if session.user_id %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i> Account
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    </li>
+                </ul>
+                {% endif %}
             </div>
         </div>
-    </header>
+    </nav>
     
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
