@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, session, make_response
 import os
 from werkzeug.utils import secure_filename
 import logging
@@ -48,8 +48,6 @@ app.config['SESSION_SQLALCHEMY'] = db
 Session(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-UPLOAD_FOLDER = os.path.join('static', 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Configure logging with more details
 logging.basicConfig(
@@ -87,13 +85,8 @@ app.register_blueprint(blueprint, url_prefix="/login")
 from models import User, Topic, Flashcard
 from sqlalchemy.orm import joinedload
 
-# Create upload directory and database tables during app initialization
+# Updated initialization function - Remove uploads directory creation
 def init_app():
-    # Create upload directory
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
-        logger.info(f"Created upload directory: {app.config['UPLOAD_FOLDER']}")
-    
     # Create database tables
     with app.app_context():
         db.create_all()
@@ -121,19 +114,22 @@ def ensure_db_connection():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Utility function for file operations
-def delete_file(file_path):
-    """Delete a file and handle any errors that occur"""
+# Updated utility function for file operations - Only handle Cloudinary
+def delete_file(cloudinary_id):
+    """Delete a file from Cloudinary"""
     try:
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            logger.info(f"Successfully deleted file: {file_path}")
-            return True
+        if cloudinary_id:
+            result = delete_from_cloudinary(cloudinary_id)
+            if result:
+                logger.info(f"Successfully deleted file from Cloudinary: {cloudinary_id}")
+            else:
+                logger.warning(f"Failed to delete file from Cloudinary: {cloudinary_id}")
+            return result
         else:
-            logger.warning(f"File not found at path: {file_path}")
+            logger.warning("No Cloudinary ID provided for deletion")
             return False
     except Exception as e:
-        logger.error(f"Error deleting file {file_path}: {str(e)}")
+        logger.error(f"Error deleting file from Cloudinary: {str(e)}")
         return False
 
 # Login required decorator
@@ -472,12 +468,6 @@ def add_card():
 
     return redirect(url_for('topic', topic_id=topic.id) + '?added=true')
 
-
-@app.route('/uploads/<filename>')
-@login_required
-def uploaded_file(filename):
-    return send_from_directory('static/uploads', filename)
-
 # Edit card with error handling
 @app.route('/edit_card/<int:card_id>', methods=['GET', 'POST'])
 @login_required
@@ -547,24 +537,7 @@ def edit_card(card_id):
                 # Always update database regardless of Cloudinary API response
                 flashcard.cloudinary_public_id = None
                 flashcard.image_path = None
-            
-            # Handle local file deletion
-            elif not old_image_path.startswith('http'):
-                # Delete local file
-                if not old_image_path.startswith('static/'):
-                    full_path = os.path.join('static', old_image_path)
-                else:
-                    full_path = old_image_path
-                    
-                if delete_file(full_path):
-                    flash('Image successfully deleted', 'success')
-                else:
-                    flash('Image could not be deleted from the server', 'warning')
-                
-                # Set the database field to None
-                flashcard.image_path = None
-            
-            # Handle other remote URLs (non-Cloudinary)
+            # Handle any other remote URLs
             else:
                 logger.info(f"Removing remote image URL from database: {old_image_path}")
                 flashcard.image_path = None
@@ -587,13 +560,6 @@ def edit_card(card_id):
                     # If there was a previous Cloudinary image, delete it
                     if old_cloudinary_id:
                         delete_from_cloudinary(old_cloudinary_id)
-                    # If there was a previous local image, delete it
-                    elif old_image_path and not old_image_path.startswith('http'):
-                        if not old_image_path.startswith('static/'):
-                            full_path = os.path.join('static', old_image_path)
-                        else:
-                            full_path = old_image_path
-                        delete_file(full_path)
                     
                     # Upload to Cloudinary
                     cloudinary_data = upload_to_cloudinary(file)
@@ -637,18 +603,9 @@ def delete_card(card_id):
     topic_id = flashcard.topic_id  # Store before deletion
     
     # Delete associated image if it exists
-    if flashcard.image_path:
-        if flashcard.cloudinary_public_id:
-            # Delete from Cloudinary
-            delete_from_cloudinary(flashcard.cloudinary_public_id)
-        elif not flashcard.image_path.startswith('http'):
-            # Delete local file if it's not a remote URL
-            if not flashcard.image_path.startswith('static/'):
-                full_path = os.path.join('static', flashcard.image_path)
-            else:
-                full_path = flashcard.image_path
-            
-            delete_file(full_path)
+    if flashcard.cloudinary_public_id:
+        # Delete from Cloudinary
+        delete_from_cloudinary(flashcard.cloudinary_public_id)
     
     # Delete the flashcard from database
     db.session.delete(flashcard)
